@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { CustomerContract, ProductCategory } from '../../types';
 import { NotionCard } from '../ui/NotionCard';
 import { NotionButton } from '../ui/NotionButton';
@@ -11,6 +11,33 @@ interface SalesViewProps {
   onAddContract: (contract: CustomerContract) => void;
   onAddLedgerIncome: (amount: number, category: string, description: string, refContractNo: string, refCustomerName: string) => void;
 }
+
+// Sub-categories mapped strictly by Main Category (Queried matching Excel files)
+const CATEGORY_SUB_MAPPING: Record<ProductCategory, string[]> = {
+  'มือถือ': [
+    'โทรศัพท์เคลื่อนที่',
+    'แท็บเล็ต / iPad',
+    'สมาร์ทวอทช์ / อุปกรณ์เสริม'
+  ],
+  'รถมอเตอร์ไซด์': [
+    'รถจักรยานยนต์',
+    'รถมอเตอร์ไซค์ไฟฟ้า',
+    'รถสามล้อ / พ่วงข้าง'
+  ],
+  'เครื่องใช้ไฟฟ้า': [
+    'ทีวีสี',
+    'ตู้เย็น',
+    'เครื่องซักผ้า-อบผ้า',
+    'เครื่องปรับอากาศ',
+    'พัดลม',
+    'เครื่องใช้ไฟฟ้าเล็ก / ไมโครเวฟ',
+    'คอมพิวเตอร์ / โน้ตบุ๊ก',
+    'เครื่องเล่นเกมส์'
+  ],
+  'อื่นๆ': [
+    'สินค้าอื่นๆ'
+  ]
+};
 
 export const SalesView: React.FC<SalesViewProps> = ({
   existingContracts,
@@ -61,24 +88,32 @@ export const SalesView: React.FC<SalesViewProps> = ({
 
   // 3 Main Categories matching Excel files strictly
   const [category, setCategory] = useState<ProductCategory>('มือถือ');
+  const [customSubCategoryMap, setCustomSubCategoryMap] = useState<Record<string, string[]>>({});
 
-  // Sub-categories list with dynamic add support
-  const [customSubCategories, setCustomSubCategories] = useState<string[]>([
-    'โทรศัพท์เคลื่อนที่',
-    'รถจักรยานยนต์',
-    'ทีวีสี',
-    'ตู้เย็น',
-    'เครื่องซักผ้า-อบผ้า',
-    'เครื่องปรับอากาศ',
-    'พัดลม',
-    'เครื่องเล่นเกมส์',
-    'แท็บเล็ต / iPad',
-    'คอมพิวเตอร์ / โน้ตบุ๊ก',
-  ]);
+  // Compute sub-categories specifically for the currently selected category
+  const availableSubCategories = useMemo(() => {
+    const defaults = CATEGORY_SUB_MAPPING[category] || [];
+    const fromContracts = existingContracts
+      .filter((c) => c.category === category && c.subCategory)
+      .map((c) => c.subCategory!);
+    const customList = customSubCategoryMap[category] || [];
+    return Array.from(new Set([...defaults, ...fromContracts, ...customList])).filter(Boolean);
+  }, [category, existingContracts, customSubCategoryMap]);
 
   const [subCategory, setSubCategory] = useState<string>('โทรศัพท์เคลื่อนที่');
   const [isAddingNewSub, setIsAddingNewSub] = useState<boolean>(false);
   const [newSubInput, setNewSubInput] = useState<string>('');
+
+  const handleCategoryChange = (newCat: ProductCategory) => {
+    setCategory(newCat);
+    const defaults = CATEGORY_SUB_MAPPING[newCat] || [];
+    const fromContracts = existingContracts
+      .filter((c) => c.category === newCat && c.subCategory)
+      .map((c) => c.subCategory!);
+    const customList = customSubCategoryMap[newCat] || [];
+    const combined = Array.from(new Set([...defaults, ...fromContracts, ...customList])).filter(Boolean);
+    setSubCategory(combined[0] || '');
+  };
 
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
@@ -119,12 +154,16 @@ export const SalesView: React.FC<SalesViewProps> = ({
 
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Add new custom sub-category handler
+  // Add new custom sub-category handler for the currently selected category
   const handleAddNewSubCategory = () => {
     if (!newSubInput.trim()) return;
     const trimmed = newSubInput.trim();
-    if (!customSubCategories.includes(trimmed)) {
-      setCustomSubCategories([...customSubCategories, trimmed]);
+    const currentList = customSubCategoryMap[category] || [];
+    if (!currentList.includes(trimmed)) {
+      setCustomSubCategoryMap({
+        ...customSubCategoryMap,
+        [category]: [...currentList, trimmed]
+      });
     }
     setSubCategory(trimmed);
     setNewSubInput('');
@@ -607,13 +646,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                   </label>
                   <select
                     value={category}
-                    onChange={(e) => {
-                      const newCat = e.target.value as ProductCategory;
-                      setCategory(newCat);
-                      if (newCat === 'มือถือ') setSubCategory('โทรศัพท์เคลื่อนที่');
-                      else if (newCat === 'รถมอเตอร์ไซด์') setSubCategory('รถจักรยานยนต์');
-                      else if (newCat === 'เครื่องใช้ไฟฟ้า') setSubCategory('ทีวีสี');
-                    }}
+                    onChange={(e) => handleCategoryChange(e.target.value as ProductCategory)}
                     className="w-full px-3 py-2 rounded-xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-bold text-notion-accent-blue"
                   >
                     <option value="มือถือ">📱 มือถือ (จากไฟล์ มือถือ.xlsx)</option>
@@ -664,7 +697,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       onChange={(e) => setSubCategory(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-bold text-emerald-600 dark:text-emerald-400"
                     >
-                      {customSubCategories.map((sub) => (
+                      {availableSubCategories.map((sub) => (
                         <option key={sub} value={sub}>
                           • {sub}
                         </option>
