@@ -84,13 +84,26 @@ export const SalesView: React.FC<SalesViewProps> = ({
   const [model, setModel] = useState('');
   const [color, setColor] = useState('');
   const [serialNo, setSerialNo] = useState('');
-  const [totalPrice, setTotalPrice] = useState<string>('15000');
+  
+  // Helper functions for Thai currency comma formatting
+  const formatInputWithCommas = (val: string | number) => {
+    const digitsOnly = String(val).replace(/\D/g, '');
+    if (!digitsOnly) return '';
+    return Number(digitsOnly).toLocaleString('en-US');
+  };
+
+  const parseDigitsOnly = (val: string | number) => {
+    const digitsOnly = String(val).replace(/\D/g, '');
+    return digitsOnly ? Number(digitsOnly) : 0;
+  };
+
+  const [totalPrice, setTotalPrice] = useState<string>('15,000');
 
   // Form Fields - Payment & Installment Terms (Up to 60 Installments)
-  const [downPayment, setDownPayment] = useState<string>('3000');
+  const [downPayment, setDownPayment] = useState<string>('3,000');
   const [totalInstallments, setTotalInstallments] = useState<number>(12);
-  const [monthlyInstallment, setMonthlyInstallment] = useState<string>('1000');
-  const [dueDateDay, setDueDateDay] = useState<number>(5);
+  const [monthlyInstallment, setMonthlyInstallment] = useState<string>('1,000');
+  const [dueDateDay, setDueDateDay] = useState<number>(15);
   const now = new Date();
   const [startDay, setStartDay] = useState<number>(now.getDate());
   const [startMonth, setStartMonth] = useState<number>(now.getMonth() + 1);
@@ -161,47 +174,56 @@ export const SalesView: React.FC<SalesViewProps> = ({
     setShowGuarantorDropdown(false);
   };
 
-  // Auto-calculate monthly installment
+  // Auto-calculate monthly installment with commas
   const handleCalculateInstallment = (priceVal: number, downVal: number, instCount: number) => {
     const financed = Math.max(0, priceVal - downVal);
     if (instCount > 0 && financed > 0) {
       const calcMonthly = Math.ceil(financed / instCount);
-      setMonthlyInstallment(calcMonthly.toString());
+      setMonthlyInstallment(formatInputWithCommas(calcMonthly));
+    } else {
+      setMonthlyInstallment('0');
     }
   };
 
   const handlePriceChange = (val: string) => {
-    setTotalPrice(val);
-    const p = Number(val) || 0;
-    const d = Number(downPayment) || 0;
+    const formatted = formatInputWithCommas(val);
+    setTotalPrice(formatted);
+    const p = parseDigitsOnly(val);
+    const d = parseDigitsOnly(downPayment);
     handleCalculateInstallment(p, d, totalInstallments);
   };
 
   const handleDownPaymentChange = (val: string) => {
-    setDownPayment(val);
-    const p = Number(totalPrice) || 0;
-    const d = Number(val) || 0;
+    const formatted = formatInputWithCommas(val);
+    setDownPayment(formatted);
+    const p = parseDigitsOnly(totalPrice);
+    const d = parseDigitsOnly(val);
     handleCalculateInstallment(p, d, totalInstallments);
+  };
+
+  const handleMonthlyInstallmentChange = (val: string) => {
+    const formatted = formatInputWithCommas(val);
+    setMonthlyInstallment(formatted);
   };
 
   const handleInstallmentCountChange = (count: number) => {
     const cappedCount = Math.min(60, Math.max(1, count));
     setTotalInstallments(cappedCount);
-    const p = Number(totalPrice) || 0;
-    const d = Number(downPayment) || 0;
+    const p = parseDigitsOnly(totalPrice);
+    const d = parseDigitsOnly(downPayment);
     handleCalculateInstallment(p, d, cappedCount);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!contractNo.trim() || !customerName.trim() || !phone.trim() || !totalPrice || Number(totalPrice) <= 0) {
+    const priceNum = parseDigitsOnly(totalPrice);
+    if (!contractNo.trim() || !customerName.trim() || !phone.trim() || priceNum <= 0) {
       alert('กรุณากรอก เลขที่สัญญา, ชื่อผู้ซื้อ, เบอร์โทร และราคาสินค้าให้ครบถ้วน');
       return;
     }
 
-    const priceNum = Number(totalPrice);
-    const downNum = saleType === 'เงินสด' ? priceNum : Number(downPayment) || 0;
-    const monthlyNum = saleType === 'เงินสด' ? 0 : Number(monthlyInstallment) || 0;
+    const downNum = saleType === 'เงินสด' ? priceNum : parseDigitsOnly(downPayment);
+    const monthlyNum = saleType === 'เงินสด' ? 0 : parseDigitsOnly(monthlyInstallment);
     const remainingNum = Math.max(0, priceNum - downNum);
     const statusVal = saleType === 'เงินสด' || remainingNum === 0 ? 'ปิดสัญญาแล้ว' : 'D0 ชำระปกติ';
 
@@ -708,12 +730,12 @@ export const SalesView: React.FC<SalesViewProps> = ({
                     ราคาสินค้าเต็ม (บาท) *
                   </label>
                   <input
-                    type="number"
+                    type="text"
                     required
-                    min="1"
                     value={totalPrice}
                     onChange={(e) => handlePriceChange(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-bold text-sm text-emerald-600 dark:text-emerald-400"
+                    placeholder="18,000"
+                    className="w-full px-3 py-2 rounded-xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400"
                   />
                 </div>
               </div>
@@ -735,11 +757,11 @@ export const SalesView: React.FC<SalesViewProps> = ({
                         เงินดาวน์ (บาท)
                       </label>
                       <input
-                        type="number"
-                        min="0"
+                        type="text"
                         value={downPayment}
                         onChange={(e) => handleDownPaymentChange(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-bold text-emerald-600 dark:text-emerald-400"
+                        placeholder="8,000"
+                        className="w-full px-3 py-2 rounded-xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-mono font-bold text-emerald-600 dark:text-emerald-400"
                       />
                     </div>
 
@@ -770,12 +792,12 @@ export const SalesView: React.FC<SalesViewProps> = ({
                         ค่างวดผ่อนต่อเดือน (บาท) *
                       </label>
                       <input
-                        type="number"
+                        type="text"
                         required
-                        min="1"
                         value={monthlyInstallment}
-                        onChange={(e) => setMonthlyInstallment(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-bold text-sm text-notion-accent-blue"
+                        onChange={(e) => handleMonthlyInstallmentChange(e.target.value)}
+                        placeholder="1,109"
+                        className="w-full px-3 py-2 rounded-xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-mono font-bold text-sm text-notion-accent-blue"
                       />
                     </div>
 
@@ -786,13 +808,13 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       <select
                         value={dueDateDay}
                         onChange={(e) => setDueDateDay(Number(e.target.value))}
-                        className="w-full px-3 py-2 rounded-xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-semibold"
+                        className="w-full px-3 py-2 rounded-xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-bold text-notion-accent-blue"
                       >
-                        <option value={5}>ทุกวันที่ 5 ของเดือน</option>
-                        <option value={10}>ทุกวันที่ 10 ของเดือน</option>
-                        <option value={15}>ทุกวันที่ 15 ของเดือน</option>
-                        <option value={20}>ทุกวันที่ 20 ของเดือน</option>
-                        <option value={25}>ทุกวันที่ 25 ของเดือน</option>
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                          <option key={d} value={d}>
+                            ทุกวันที่ {d} ของเดือน
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -864,18 +886,18 @@ export const SalesView: React.FC<SalesViewProps> = ({
                   <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                     <div>
                       <span className="text-notion-text-muted">ราคาสินค้าเต็ม:</span>
-                      <p className="font-bold text-sm">{formatCurrency(Number(totalPrice) || 0)}</p>
+                      <p className="font-bold text-sm">{formatCurrency(parseDigitsOnly(totalPrice))}</p>
                     </div>
                     <div>
                       <span className="text-notion-text-muted">รับเงินดาวน์วันนี้:</span>
                       <p className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
-                        {formatCurrency(Number(downPayment) || 0)}
+                        {formatCurrency(parseDigitsOnly(downPayment))}
                       </p>
                     </div>
                     <div>
                       <span className="text-notion-text-muted">ยอดตั้งจัดผ่อนคงเหลือ:</span>
                       <p className="font-bold text-sm text-rose-600 dark:text-rose-400">
-                        {formatCurrency(Math.max(0, (Number(totalPrice) || 0) - (Number(downPayment) || 0)))}
+                        {formatCurrency(Math.max(0, parseDigitsOnly(totalPrice) - parseDigitsOnly(downPayment)))}
                       </p>
                     </div>
                     <div>
@@ -893,10 +915,10 @@ export const SalesView: React.FC<SalesViewProps> = ({
                         ยอดเงินสดที่รับชำระเต็มจำนวน (บาท)
                       </label>
                       <input
-                        type="number"
+                        type="text"
                         readOnly
                         value={totalPrice}
-                        className="w-full px-3 py-2 rounded-xl bg-stone-100 dark:bg-stone-800 border border-notion-border-light dark:border-notion-border-dark font-bold text-base text-emerald-600 dark:text-emerald-400"
+                        className="w-full px-3 py-2 rounded-xl bg-stone-100 dark:bg-stone-800 border border-notion-border-light dark:border-notion-border-dark font-mono font-bold text-base text-emerald-600 dark:text-emerald-400"
                       />
                     </div>
 
