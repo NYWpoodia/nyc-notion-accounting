@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-size: 17px; /* 100% Enlarged High-Visibility Typography Baseline */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-notion-bg-light dark:bg-notion-bg-dark text-notion-text-main dark:text-notion-text-darkMain font-sans antialiased selection:bg-notion-accent-blueBg selection:text-notion-accent-blue;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* High-Visibility Form Controls & Touch Target Padding for Mobile & Desktop */
+  input, select, textarea, button {
+    font-size: 1.05rem; /* ~18px bold readable font size */
+  }
+
+  /* Custom Touch-Friendly Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(55, 53, 47, 0.25);
+    border-radius: 9999px;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(55, 53, 47, 0.4);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.45);
+  }
+}
+
+/* Notion Custom Glass and Hover Classes */
+.notion-glass {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.dark .notion-glass {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.notion-hover-bg {
+  @apply hover:bg-notion-hover-light dark:hover:bg-notion-hover-dark transition-colors duration-150;
+}
+
+.notion-border {
+  @apply border border-notion-border-light dark:border-notion-border-dark;
+}
+
+/* Multi-page High-Resolution Print Stylesheet Override */
+@media print {
+  /* Hide non-printable navigation bars, sidebars, buttons */
+  aside, header, nav, .no-print, button, input, select {
+    display: none !important;
+  }
+  
+  /* Reset ALL layout containers to unconstrained height and visible overflow for multi-page printing */
+  html, body, #root, div, main, section, .printable-area {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    position: static !important;
+    float: none !important;
+    background: white !important;
+    color: black !important;
+    font-size: 11pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  body {
+    padding: 10mm !important;
+  }
+
+  .printable-area {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* Table Multi-page Break & Page Header Group Formatting */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    margin-top: 10px !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+    break-inside: avoid !important;
+  }
+
+  tbody {
+    display: table-row-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  th, td {
+    border: 1px solid #4b5563 !important;
+    padding: 7px 10px !important;
+    color: black !important;
+    font-size: 10pt !important;
+  }
+
+  th {
+    background-color: #f3f4f6 !important;
+    font-weight: bold !important;
+    color: black !important;
+  }
+
+  /* Force printable badges and texts to be crisp black & white for paper printouts */
+  span, p, h1, h2, h3, div, td {
+    color: black !important;
+  }
+}
