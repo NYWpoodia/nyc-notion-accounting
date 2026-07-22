@@ -6,13 +6,14 @@ import { NotionButton } from '../ui/NotionButton';
 import { NotionModal } from '../ui/NotionModal';
 import { SearchFilterBar } from '../ui/SearchFilterBar';
 import { formatCurrency, formatThaiDate, getContractStatusStyle, getTodayIsoDate } from '../../services/formatters';
-import { LayoutGrid, Table, Phone, MapPin, CreditCard, Eye, PlusCircle, Navigation, ExternalLink, UserCheck, ShieldCheck, CheckCircle2, Edit2, Save } from 'lucide-react';
+import { LayoutGrid, Table, Phone, MapPin, CreditCard, Eye, PlusCircle, Navigation, ExternalLink, UserCheck, ShieldCheck, CheckCircle2, Edit2, Save, Trash2 } from 'lucide-react';
 
 interface CustomersViewProps {
   contracts: CustomerContract[];
   onQuickPay: (contractNo: string) => void;
   onAddContract: (contract: CustomerContract) => void;
   onUpdateContractCustomer?: (contractNo: string, updatedFields: Partial<CustomerContract>) => void;
+  onDeleteContract?: (contractNo: string) => void;
 }
 
 export const CustomersView: React.FC<CustomersViewProps> = ({
@@ -20,6 +21,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   onQuickPay,
   onAddContract,
   onUpdateContractCustomer,
+  onDeleteContract,
 }) => {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,6 +51,19 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   const [editAddress, setEditAddress] = useState('');
   const [editLocationPin, setEditLocationPin] = useState('');
   const [editSuccessMsg, setEditSuccessMsg] = useState<string | null>(null);
+
+  // Delete Confirmation State
+  const [deleteConfirmContract, setDeleteConfirmContract] = useState<CustomerContract | null>(null);
+
+  const handleConfirmDelete = () => {
+    if (deleteConfirmContract && onDeleteContract) {
+      // Close all open modals for this contract first
+      if (selectedContract?.contractNo === deleteConfirmContract.contractNo) setSelectedContract(null);
+      if (editingCustomerContract?.contractNo === deleteConfirmContract.contractNo) setEditingCustomerContract(null);
+      onDeleteContract(deleteConfirmContract.contractNo);
+      setDeleteConfirmContract(null);
+    }
+  };
 
   // Open Edit Customer Modal Handler
   const handleOpenEditModal = (c: CustomerContract) => {
@@ -329,6 +344,17 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                             รับชำระ
                           </NotionButton>
                         )}
+                        {onDeleteContract && (
+                          <NotionButton
+                            variant="ghost"
+                            size="sm"
+                            icon={<Trash2 className="w-3.5 h-3.5 text-rose-500" />}
+                            onClick={() => setDeleteConfirmContract(contract)}
+                            title="ลบข้อมูลลูกค้า/สัญญา"
+                          >
+                            <span className="text-rose-500">ลบ</span>
+                          </NotionButton>
+                        )}
                       </td>
                     </tr>
                   );
@@ -406,7 +432,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                 </div>
 
                 {/* Grid View Action Buttons with Edit Button ✏️ */}
-                <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-notion-border-light dark:border-notion-border-dark">
+                <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-notion-border-light dark:border-notion-border-dark flex-wrap">
                   <NotionButton
                     variant="ghost"
                     size="sm"
@@ -429,6 +455,16 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                       onClick={() => onQuickPay(contract.contractNo)}
                     >
                       รับชำระเงิน
+                    </NotionButton>
+                  )}
+                  {onDeleteContract && (
+                    <NotionButton
+                      variant="ghost"
+                      size="sm"
+                      icon={<Trash2 className="w-3.5 h-3.5 text-rose-500" />}
+                      onClick={() => setDeleteConfirmContract(contract)}
+                    >
+                      <span className="text-rose-500">ลบ</span>
                     </NotionButton>
                   )}
                 </div>
@@ -851,17 +887,31 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-notion-border-light dark:border-notion-border-dark">
-              <NotionButton
-                variant="secondary"
-                icon={<Edit2 className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
-                onClick={() => {
-                  const c = selectedContract;
-                  setSelectedContract(null);
-                  handleOpenEditModal(c);
-                }}
-              >
-                ✏️ แก้ไขข้อมูลลูกค้า & ผู้ค้ำประกัน
-              </NotionButton>
+              <div className="flex gap-2 flex-wrap">
+                <NotionButton
+                  variant="secondary"
+                  icon={<Edit2 className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
+                  onClick={() => {
+                    const c = selectedContract;
+                    setSelectedContract(null);
+                    handleOpenEditModal(c);
+                  }}
+                >
+                  ✏️ แก้ไขข้อมูลลูกค้า & ผู้ค้ำประกัน
+                </NotionButton>
+                {onDeleteContract && (
+                  <NotionButton
+                    variant="ghost"
+                    icon={<Trash2 className="w-4 h-4 text-rose-500" />}
+                    onClick={() => {
+                      setDeleteConfirmContract(selectedContract);
+                      setSelectedContract(null);
+                    }}
+                  >
+                    <span className="text-rose-500">🗑️ ลบข้อมูล</span>
+                  </NotionButton>
+                )}
+              </div>
 
               <div className="flex gap-2">
                 <NotionButton variant="secondary" onClick={() => setSelectedContract(null)}>
@@ -880,6 +930,61 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                   </NotionButton>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+      </NotionModal>
+
+      {/* ===== Delete Confirmation Modal ===== */}
+      <NotionModal
+        isOpen={!!deleteConfirmContract}
+        onClose={() => setDeleteConfirmContract(null)}
+        maxWidth="sm"
+        title="ยืนยันการลบข้อมูล"
+        icon={<Trash2 className="w-6 h-6 text-rose-500" />}
+      >
+        {deleteConfirmContract && (
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800">
+              <p className="text-sm text-rose-700 dark:text-rose-300 font-semibold mb-3">
+                ⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้? การกระทำนี้ไม่สามารถย้อนกลับได้
+              </p>
+              <div className="space-y-1.5 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-notion-text-muted w-24 shrink-0">เลขที่สัญญา:</span>
+                  <span className="font-mono font-bold text-notion-accent-blue">{deleteConfirmContract.contractNo}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-notion-text-muted w-24 shrink-0">ชื่อลูกค้า:</span>
+                  <span className="font-bold text-notion-text-main dark:text-notion-text-darkMain">{deleteConfirmContract.customerName}</span>
+                </div>
+                {deleteConfirmContract.bpCode && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-notion-text-muted w-24 shrink-0">รหัส BP:</span>
+                    <span className="font-mono font-semibold text-cyan-700 dark:text-cyan-300">{deleteConfirmContract.bpCode}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <span className="text-notion-text-muted w-24 shrink-0">เบอร์โทร:</span>
+                  <span className="font-semibold">{deleteConfirmContract.phone}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <NotionButton
+                variant="secondary"
+                onClick={() => setDeleteConfirmContract(null)}
+              >
+                ยกเลิก
+              </NotionButton>
+              <NotionButton
+                variant="ghost"
+                icon={<Trash2 className="w-4 h-4 text-rose-500" />}
+                onClick={handleConfirmDelete}
+              >
+                <span className="text-rose-600 font-bold">🗑️ ยืนยันลบข้อมูล</span>
+              </NotionButton>
             </div>
           </div>
         )}

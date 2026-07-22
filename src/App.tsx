@@ -11,6 +11,8 @@ import {
   deleteLedgerTransaction,
   addContractFollowUpNote,
   updateContractCustomerDetails,
+  addStoredContract,
+  deleteStoredContract,
 } from './services/storageService';
 import { formatCurrency, getTodayIsoDate } from './services/formatters';
 import { Sidebar } from './components/layout/Sidebar';
@@ -123,6 +125,16 @@ export function App() {
     setContracts(updated);
   };
 
+  const handleAddNewContract = (newContract: CustomerContract) => {
+    const updated = addStoredContract(newContract);
+    setContracts(updated);
+  };
+
+  const handleDeleteContract = (contractNo: string) => {
+    const updated = deleteStoredContract(contractNo);
+    setContracts(updated);
+  };
+
   const handleUpdateContractCustomerDetails = (contractNo: string, updatedFields: Partial<CustomerContract>) => {
     const updated = updateContractCustomerDetails(contractNo, updatedFields);
     setContracts(updated);
@@ -166,11 +178,7 @@ export function App() {
           {currentView === 'sales' && (
             <SalesView
               existingContracts={contracts}
-              onAddContract={(c) => {
-                const updated = [c, ...contracts];
-                setContracts(updated);
-                saveStoredContracts(updated);
-              }}
+              onAddContract={handleAddNewContract}
               onAddLedgerIncome={(amount, category, description, refContractNo, refCustomerName) => {
                 handleAddLedgerItem({
                   date: getTodayIsoDate(),
@@ -189,12 +197,9 @@ export function App() {
             <CustomersView
               contracts={contracts}
               onQuickPay={(contractNo) => handleOpenQuickPay(contractNo)}
-              onAddContract={(c) => {
-                const updated = [c, ...contracts];
-                setContracts(updated);
-                saveStoredContracts(updated);
-              }}
+              onAddContract={handleAddNewContract}
               onUpdateContractCustomer={handleUpdateContractCustomerDetails}
+              onDeleteContract={handleDeleteContract}
             />
           )}
 

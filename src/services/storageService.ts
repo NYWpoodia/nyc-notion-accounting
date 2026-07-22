@@ -145,6 +145,43 @@ export function updateContractCustomerDetails(
   return updated;
 }
 
+export function deleteStoredContract(contractNo: string): CustomerContract[] {
+  const contracts = getStoredContracts();
+  const filtered = contracts.filter((c) => c.contractNo !== contractNo);
+  saveStoredContracts(filtered);
+
+  // Sync DELETE to API Server if available
+  fetch(`${API_BASE_URL}/contracts/${contractNo}`, {
+    method: 'DELETE',
+  }).catch(() => {});
+
+  return filtered;
+}
+
+export function addStoredContract(newContract: CustomerContract): CustomerContract[] {
+  const contracts = getStoredContracts();
+  
+  // If adding a real contract (not TEMP-), clean up any existing TEMP- contract for the same customer
+  let cleanedContracts = contracts;
+  if (!newContract.contractNo.startsWith('TEMP-')) {
+    cleanedContracts = contracts.filter((c) => {
+      const isTemp = c.contractNo.startsWith('TEMP-') || c.productName.includes('รอดำเนินการเปิดสัญญา');
+      if (!isTemp) return true;
+      const bpMatch = c.bpCode && newContract.bpCode && c.bpCode === newContract.bpCode;
+      const phoneMatch = c.phone === newContract.phone;
+      const nameMatch = c.customerName === newContract.customerName;
+      if (bpMatch || phoneMatch || nameMatch) {
+        return false; // Remove temp placeholder record
+      }
+      return true;
+    });
+  }
+
+  const updated = [newContract, ...cleanedContracts];
+  saveStoredContracts(updated);
+  return updated;
+}
+
 export function executePayment(data: {
   contractNo: string;
   amount: number;
