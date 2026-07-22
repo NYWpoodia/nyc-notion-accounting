@@ -6,7 +6,7 @@ import { NotionButton } from '../ui/NotionButton';
 import { NotionBadge } from '../ui/NotionBadge';
 import { NotionModal } from '../ui/NotionModal';
 import { formatCurrency, formatThaiDate, format24HourTime, getContractStatusStyle, getTodayIsoDate } from '../../services/formatters';
-import { Printer, Calendar, FileText, Store, Plus, Clock, MessageSquarePlus, CheckCircle2, Check, AlertCircle, PieChart, FileSpreadsheet, Download, Eye, Edit2, Navigation, Save, User, ShieldCheck, Send } from 'lucide-react';
+import { Printer, Calendar, FileText, Store, Plus, Clock, MessageSquarePlus, CheckCircle2, Check, AlertCircle, PieChart, FileSpreadsheet, Download, Eye, Edit2, Navigation, Save, User, ShieldCheck, Send, Search, X } from 'lucide-react';
 
 interface MonthlyReportViewProps {
   contracts: CustomerContract[];
@@ -26,6 +26,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('all-debtors');
   const [sortBy, setSortBy] = useState<'name' | 'contractNo' | 'dueDate' | 'installment'>('name');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   // 1. Customer Master Profile & Guarantor Edit Modal State (Opened by Eye 👁️)
   const [selectedCustomerContract, setSelectedCustomerContract] = useState<CustomerContract | null>(null);
@@ -76,6 +77,21 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
       if (c.status === 'D0 ชำระปกติ' || c.status === 'ปิดสัญญาแล้ว') return false;
     } else if (selectedStatusFilter === 'high-risk') {
       if (!['D3 ค้างชำระ 3 เดือน', 'D4 ค้างชำระ 4 เดือน', 'D5 ค้างชำระ 5 เดือน', 'D6 ค้างชำระ 6 เดือน'].includes(c.status)) return false;
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const matchName = c.customerName.toLowerCase().includes(q);
+      const matchBp = c.bpCode?.toLowerCase().includes(q);
+      const matchContractNo = c.contractNo.toLowerCase().includes(q);
+      const matchPhone = c.phone.includes(q);
+      const matchGuarantor = c.guarantorName?.toLowerCase().includes(q);
+      const matchGuarantorPhone = c.guarantorPhone?.includes(q);
+      const matchProduct = c.productName.toLowerCase().includes(q);
+      const matchAddress = c.address.toLowerCase().includes(q);
+      if (!matchName && !matchBp && !matchContractNo && !matchPhone && !matchGuarantor && !matchGuarantorPhone && !matchProduct && !matchAddress) {
+        return false;
+      }
     }
 
     return true;
@@ -310,6 +326,33 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
 
         {/* Filters */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-4 no-print border-t border-notion-border-light dark:border-notion-border-dark mt-4">
+          {/* Search Debtor Input Field */}
+          <div className="col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-5">
+            <label className="block text-xs font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1 flex items-center gap-1.5">
+              <Search className="w-4 h-4 text-notion-accent-blue" />
+              <span>ค้นหาลูกหนี้ตามเก็บ (ชื่อลูกค้า, รหัส BP, เลขที่สัญญา, เบอร์โทรศัพท์, ผู้ค้ำประกัน หรือสินค้า)</span>
+            </label>
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-notion-text-muted" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="พิมพ์ชื่อลูกค้า, BP, เลขสัญญา, เบอร์โทร หรือชื่อผู้ค้ำประกัน..."
+                className="w-full pl-10 pr-10 py-2 text-xs sm:text-sm rounded-xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark text-notion-text-main dark:text-notion-text-darkMain font-semibold focus:outline-none focus:ring-1 focus:ring-notion-accent-blue shadow-notion-sm"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-notion-text-muted hover:text-notion-text-main"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-semibold text-notion-text-muted mb-1">เลือกเดือน</label>
             <select
