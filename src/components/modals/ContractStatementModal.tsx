@@ -47,13 +47,12 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
   }
   const startYearBE = startY > 2500 ? startY : startY + 543;
 
-  // Financial calculations with Backward Down Payment Computation
+  // Financial calculations
   const monthlyNum = contract.monthlyInstallment || 0;
   const totalInst = Math.max(1, contract.totalInstallments || 12);
-  const rawFinancedNum = monthlyNum * totalInst;
-  const downNum = contract.downPayment > 0 ? contract.downPayment : Math.round(rawFinancedNum * 0.1);
-  const priceNum = contract.totalPrice && contract.totalPrice > rawFinancedNum ? contract.totalPrice : rawFinancedNum + downNum;
-  const financedNum = rawFinancedNum;
+  const downNum = contract.downPayment || 0;
+  const priceNum = contract.totalPrice || (monthlyNum * totalInst + downNum);
+  const financedNum = contract.totalPrice ? Math.max(0, contract.totalPrice - downNum) : monthlyNum * totalInst;
   const finalInstAmount = monthlyNum;
 
   // Determine Due Day (default to 2 if 0 or undefined)
@@ -63,59 +62,82 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
   let firstDueM = 6;
   let firstDueY = 2026;
 
-  if (contract.firstInstallmentDueDate) {
-    const parts = contract.firstInstallmentDueDate.split('-');
-    if (parts.length === 3) {
-      firstDueY = parseInt(parts[0], 10);
-      firstDueM = parseInt(parts[1], 10);
-    }
-  } else if (contract.startDate) {
+  if (contract.startDate) {
     const parts = contract.startDate.split('-');
     if (parts.length === 3) {
       const sY = parseInt(parts[0], 10);
       const sM = parseInt(parts[1], 10);
       const sD = parseInt(parts[2], 10);
       firstDueY = sY;
-      // If contract day >= dueDay (e.g. 27 April >= 2), 1st installment is in month +2 (June)
       firstDueM = sD >= dueDay ? sM + 2 : sM + 1;
     }
   }
 
-  // Build Installment Schedule Array
-  const scheduleRows = Array.from({ length: totalInst }, (_, idx) => {
-    const instNo = idx + 1;
-    const isFinal = instNo === totalInst;
-    const expectedAmount = isFinal ? finalInstAmount : monthlyNum;
+  // Build Installment Schedule Array (Prefer exact Excel schedule if present)
+  const hasExactSchedule = contract.schedule && contract.schedule.length > 0;
 
-    // Compute Due Month & Year for installment idx
-    let rawM = firstDueM + idx;
-    let dueYear = firstDueY + Math.floor((rawM - 1) / 12);
-    let dueMonth = ((rawM - 1) % 12) + 1;
+  const scheduleRows = hasExactSchedule
+    ? contract.schedule!.map((item) => {
+        const matchPay = contract.payments?.find((p) => p.installmentNo === item.installmentNo);
+        const receiptNoStr = item.receiptNo || matchPay?.receiptNo || '';
+        const paidDateStr = item.paidDate || matchPay?.paymentDate || '';
 
-    const dueYearBE = dueYear > 2500 ? dueYear : dueYear + 543;
-    const dueDateThai = `${dueDay} ${monthNames[dueMonth - 1]} ${dueYearBE}`;
-    const dueDateIso = `${dueYear}-${String(dueMonth).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
+        return {
+          instNo: item.installmentNo,
+          isFinal: item.installmentNo === totalInst,
+          dueDateThai: item.dueDateThai || formatThaiDate(item.dueDate, true),
+          dueDateIso: item.dueDate,
+          expectedAmount: item.installmentAmount,
+          isPaid: !!item.isPaid || (item.paidAmount !== undefined && item.paidAmount > 0) || !!matchPay,
+          isOverdue: !item.isPaid && !matchPay && item.dueDate < new Date().toISOString().split('T')[0],
+          paymentRecord: matchPay ? {
+            ...matchPay,
+            receiptNo: receiptNoStr,
+            paymentDate: paidDateStr,
+          } : (paidDateStr || receiptNoStr) ? {
+            id: `pay-${contract.contractNo}-${item.installmentNo}`,
+            contractNo: contract.contractNo,
+            receiptNo: receiptNoStr,
+            customerName: contract.customerName,
+            amount: item.paidAmount || item.installmentAmount,
+            paymentDate: paidDateStr,
+            installmentNo: item.installmentNo,
+            paymentMethod: 'โอนเงิน' as const,
+          } : undefined,
+        };
+      })
+    : Array.from({ length: totalInst }, (_, idx) => {
+        const instNo = idx + 1;
+        const isFinal = instNo === totalInst;
+        const expectedAmount = isFinal ? finalInstAmount : monthlyNum;
 
-    // Match payment record in contract
-    const matchPay = contract.payments?.find(
-      (p) => p.installmentNo === instNo || (p.installmentNo === undefined && contract.payments?.indexOf(p) === idx)
-    );
+        let rawM = firstDueM + idx;
+        let dueYear = firstDueY + Math.floor((rawM - 1) / 12);
+        let dueMonth = ((rawM - 1) % 12) + 1;
 
-    const todayIso = new Date().toISOString().split('T')[0];
-    const isPaid = !!matchPay;
-    const isOverdue = !isPaid && dueDateIso < todayIso;
+        const dueYearBE = dueYear > 2500 ? dueYear : dueYear + 543;
+        const dueDateThai = `${dueDay} ${monthNames[dueMonth - 1]} ${dueYearBE}`;
+        const dueDateIso = `${dueYear}-${String(dueMonth).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
 
-    return {
-      instNo,
-      isFinal,
-      dueDateThai,
-      dueDateIso,
-      expectedAmount,
-      isPaid,
-      isOverdue,
-      paymentRecord: matchPay,
-    };
-  });
+        const matchPay = contract.payments?.find(
+          (p) => p.installmentNo === instNo || (p.installmentNo === undefined && contract.payments?.indexOf(p) === idx)
+        );
+
+        const todayIso = new Date().toISOString().split('T')[0];
+        const isPaid = !!matchPay;
+        const isOverdue = !isPaid && dueDateIso < todayIso;
+
+        return {
+          instNo,
+          isFinal,
+          dueDateThai,
+          dueDateIso,
+          expectedAmount,
+          isPaid,
+          isOverdue,
+          paymentRecord: matchPay,
+        };
+      });
 
   const handlePrint = () => {
     window.print();

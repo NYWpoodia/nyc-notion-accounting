@@ -40,6 +40,7 @@ function mapContractToRow(c: CustomerContract) {
     start_date: c.startDate,
     status: c.status,
     payments: c.payments || [],
+    schedule: c.schedule || [],
     updated_at: new Date().toISOString(),
   };
 }
@@ -75,6 +76,7 @@ function mapRowToContract(row: any): CustomerContract {
     startDate: row.start_date,
     status: row.status,
     payments: row.payments || [],
+    schedule: row.schedule || undefined,
   };
 }
 

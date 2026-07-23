@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS public.nyc_contracts (
     start_date TEXT NOT NULL,
     status TEXT NOT NULL,
     payments JSONB DEFAULT '[]'::jsonb,
+    schedule JSONB DEFAULT '[]'::jsonb,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 

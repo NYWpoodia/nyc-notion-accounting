@@ -31,17 +31,50 @@ export function formatReceiptNoList(str?: string): string {
 // Thai Full / Short Date e.g. "22 ก.ค. 2569"
 export function formatThaiDate(dateStr?: string, fullMonth: boolean = false): string {
   if (!dateStr) return '-';
+  
+  const shortMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  const longMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+  const monthList = fullMonth ? longMonths : shortMonths;
+
+  const cleanStr = String(dateStr).trim();
+  if (cleanStr === '-' || cleanStr === '0') return '-';
+
+  // Handle DD/MM/YYYY or YYYY-MM-DD
+  const parts = cleanStr.split(/[\/\.-]/);
+  if (parts.length === 3) {
+    let day = 0;
+    let month = 0;
+    let year = 0;
+
+    if (parts[0].length === 4) {
+      // YYYY-MM-DD
+      year = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10);
+      day = parseInt(parts[2], 10);
+    } else {
+      // DD/MM/YYYY
+      day = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10);
+      year = parseInt(parts[2], 10);
+    }
+
+    if (!isNaN(day) && !isNaN(month) && !isNaN(year) && month >= 1 && month <= 12) {
+      const yearBE = year > 2500 ? year : year + 543;
+      return `${day} ${monthList[month - 1]} ${yearBE}`;
+    }
+  }
+
   try {
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr;
-    
-    return new Intl.DateTimeFormat('th-TH', {
-      year: 'numeric',
-      month: fullMonth ? 'long' : 'short',
-      day: 'numeric',
-    }).format(date);
+    const date = new Date(cleanStr);
+    if (isNaN(date.getTime())) return cleanStr;
+    let y = date.getFullYear();
+    if (y > 2500) y -= 543;
+    const yearBE = y + 543;
+    const m = date.getMonth();
+    const d = date.getDate();
+    return `${d} ${monthList[m]} ${yearBE}`;
   } catch {
-    return dateStr;
+    return cleanStr;
   }
 }
 

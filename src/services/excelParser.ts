@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
-import { CustomerContract, ProductCategory, ContractStatus, PaymentRecord } from '../types';
-import { formatReceiptNoList } from './formatters';
+import { CustomerContract, ProductCategory, ContractStatus, PaymentRecord, InstallmentScheduleItem } from '../types';
+import { formatReceiptNoList, formatThaiDate } from './formatters';
 
 export async function parseExcelFile(file: File): Promise<CustomerContract[]> {
   const data = await file.arrayBuffer();
@@ -77,6 +77,7 @@ export function parseSingleCustomerSheet(
   let startDate = '2026-04-27';
   let dueDateDay = 15;
   const payments: PaymentRecord[] = [];
+  const schedule: InstallmentScheduleItem[] = [];
 
   rows.forEach((row) => {
     if (!Array.isArray(row) || row.length === 0) return;
@@ -95,19 +96,33 @@ export function parseSingleCustomerSheet(
       totalInstallments = Math.max(totalInstallments, instNo);
       if (monthlyInstallment === 0 && instAmount > 0) monthlyInstallment = instAmount;
 
+      const parsedDueIso = parseExcelDateString(dueVal);
+      const dueDateThaiStr = parsedDueIso ? formatThaiDate(parsedDueIso, true) : (dueVal ? String(dueVal) : '');
+      const formattedPaidDate = parseExcelDateString(paidDateRaw);
+
       // Extract Due Date Day from installment 1
-      if (instNo === 1 && dueVal) {
-        const parsedDue = parseExcelDateString(dueVal);
-        if (parsedDue) {
-          const parts = parsedDue.split('-');
-          if (parts.length === 3) {
-            dueDateDay = parseInt(parts[2], 10) || 15;
-          }
+      if (instNo === 1 && parsedDueIso) {
+        const parts = parsedDueIso.split('-');
+        if (parts.length === 3) {
+          dueDateDay = parseInt(parts[2], 10) || 15;
         }
       }
 
+      // Add to schedule array directly from Excel row!
+      schedule.push({
+        installmentNo: instNo,
+        dueDate: parsedDueIso || String(dueVal || ''),
+        dueDateThai: dueDateThaiStr,
+        installmentAmount: instAmount,
+        paidDate: formattedPaidDate,
+        paidAmount: paidAmount,
+        remainingBalance: remBal !== null ? remBal : undefined,
+        receiptNo: formatReceiptNoList(receiptRaw),
+        isPaid: paidAmount > 0 || !!formattedPaidDate,
+        note: noteRaw || undefined,
+      });
+
       // Check if payment was made for this installment
-      const formattedPaidDate = parseExcelDateString(paidDateRaw);
       if (paidAmount > 0 || formattedPaidDate) {
         paidInstallments++;
         payments.push({
@@ -213,5 +228,6 @@ export function parseSingleCustomerSheet(
     startDate,
     status,
     payments,
+    schedule: schedule.length > 0 ? schedule : undefined,
   };
 }

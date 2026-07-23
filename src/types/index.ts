@@ -87,6 +87,20 @@ export interface CustomerContract {
   notes?: string;
   followUpLogs?: FollowUpNote[];
   payments: PaymentRecord[];
+  schedule?: InstallmentScheduleItem[];
+}
+
+export interface InstallmentScheduleItem {
+  installmentNo: number;
+  dueDate: string;
+  dueDateThai: string;
+  installmentAmount: number;
+  paidDate?: string;
+  paidAmount?: number;
+  remainingBalance?: number;
+  receiptNo?: string;
+  isPaid?: boolean;
+  note?: string;
 }
 
 export type LedgerType = 'income' | 'expense';
