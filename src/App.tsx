@@ -147,11 +147,33 @@ export function App() {
     setLedger(updated);
   };
 
+  const handleCleanDuplicates = () => {
+    const map = new Map<string, CustomerContract>();
+    contracts.forEach((c) => {
+      const existing = map.get(c.contractNo);
+      // Keep contract with payments or higher status priority
+      if (!existing || (c.payments && c.payments.length >= (existing.payments?.length || 0))) {
+        map.set(c.contractNo, c);
+      }
+    });
+    const cleaned = Array.from(map.values());
+    setContracts(cleaned);
+    saveStoredContracts(cleaned);
+    seedContractsToSupabase(cleaned);
+    alert(`🧹 ลบสัญญาซ้ำซ้อนเรียบร้อยแล้ว! คงเหลือ ${cleaned.length} สัญญาที่ไม่ซ้ำ`);
+  };
+
   const handleImportContracts = (importedContracts: CustomerContract[]) => {
-    const merged = [...importedContracts, ...contracts];
-    setContracts(merged);
-    saveStoredContracts(merged);
-    seedContractsToSupabase(importedContracts);
+    const map = new Map<string, CustomerContract>();
+    // Existing contracts
+    contracts.forEach((c) => map.set(c.contractNo, c));
+    // Overwrite with imported Excel contracts (newly imported contracts take precedence)
+    importedContracts.forEach((c) => map.set(c.contractNo, c));
+
+    const deduplicated = Array.from(map.values());
+    setContracts(deduplicated);
+    saveStoredContracts(deduplicated);
+    seedContractsToSupabase(deduplicated);
     setCurrentView('customers');
   };
 
@@ -262,6 +284,7 @@ export function App() {
               onUpdateCustomerProfile={handleUpdateCustomerProfile}
               onDeleteCustomerProfile={handleDeleteCustomerProfile}
               onDeleteContract={handleDeleteContract}
+              onCleanDuplicates={handleCleanDuplicates}
             />
           )}
 

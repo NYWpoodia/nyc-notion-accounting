@@ -37,6 +37,7 @@ interface CustomersViewProps {
   onUpdateCustomerProfile?: (id: string, updatedFields: Partial<CustomerProfile>) => void;
   onDeleteCustomerProfile?: (id: string) => void;
   onDeleteContract?: (contractNo: string) => void;
+  onCleanDuplicates?: () => void;
 }
 
 export const CustomersView: React.FC<CustomersViewProps> = ({
@@ -47,6 +48,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   onUpdateCustomerProfile,
   onDeleteCustomerProfile,
   onDeleteContract,
+  onCleanDuplicates,
 }) => {
   // Navigation Tab State
   const [activeTab, setActiveTab] = useState<'profiles' | 'contracts'>('profiles');
@@ -301,16 +303,28 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
           </button>
         </div>
 
-        <NotionButton
-          variant="primary"
-          icon={<PlusCircle className="w-4 h-4" />}
-          onClick={() => {
-            setSaveSuccessMsg(null);
-            setIsAddModalOpen(true);
-          }}
-        >
-          + เพิ่มข้อมูลลูกค้าใหม่ (Master Data)
-        </NotionButton>
+        <div className="flex items-center gap-2">
+          {onCleanDuplicates && (
+            <NotionButton
+              type="button"
+              variant="secondary"
+              icon={<Trash2 className="w-4 h-4 text-rose-500" />}
+              onClick={onCleanDuplicates}
+            >
+              🧹 ล้างข้อมูลสัญญาซ้ำ
+            </NotionButton>
+          )}
+          <NotionButton
+            variant="primary"
+            icon={<PlusCircle className="w-4 h-4" />}
+            onClick={() => {
+              setSaveSuccessMsg(null);
+              setIsAddModalOpen(true);
+            }}
+          >
+            + เพิ่มข้อมูลลูกค้าใหม่ (Master Data)
+          </NotionButton>
+        </div>
       </div>
 
       {/* Search & Header Control Bar */}
