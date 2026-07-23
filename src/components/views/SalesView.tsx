@@ -965,29 +965,98 @@ export const SalesView: React.FC<SalesViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Summary Box */}
-                  <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                    <div>
-                      <span className="text-notion-text-muted">ราคาสินค้าเต็ม:</span>
-                      <p className="font-bold text-sm">{formatCurrency(parseDigitsOnly(totalPrice))}</p>
+                  {/* Comprehensive Installment & Final Payment Calculation Box */}
+                  <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 space-y-3">
+                    <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2">
+                      <span className="font-bold text-sm text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <span>สรุปการคำนวณเงินดาวน์ & ยอดผ่อนงวดสุดท้าย</span>
+                      </span>
+                      <NotionBadge variant="success">คำนวณงวดสุดท้ายอัตโนมัติ</NotionBadge>
                     </div>
-                    <div>
-                      <span className="text-notion-text-muted">รับเงินดาวน์วันนี้:</span>
-                      <p className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
-                        {formatCurrency(parseDigitsOnly(downPayment))}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-notion-text-muted">ยอดตั้งจัดผ่อนคงเหลือ:</span>
-                      <p className="font-bold text-sm text-rose-600 dark:text-rose-400">
-                        {formatCurrency(Math.max(0, parseDigitsOnly(totalPrice) - parseDigitsOnly(downPayment)))}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-notion-text-muted">จำนวนงวดที่ผ่อน:</span>
-                      <p className="font-bold text-sm text-notion-accent-blue">{totalInstallments} งวด</p>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+                      <div>
+                        <span className="text-notion-text-muted block mb-0.5">ราคาสินค้าเต็ม:</span>
+                        <p className="font-bold text-sm text-notion-text-main dark:text-notion-text-darkMain">
+                          {formatCurrency(parseDigitsOnly(totalPrice))}
+                        </p>
+                      </div>
+
+                      <div>
+                        <span className="text-notion-text-muted block mb-0.5">เงินดาวน์วันทำสัญญา:</span>
+                        <p className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
+                          {formatCurrency(parseDigitsOnly(downPayment))}
+                        </p>
+                        <span className="text-[10px] text-stone-500">โอนเงินดาวน์: {startDay} {monthNames[startMonth - 1]} {startYearBE}</span>
+                      </div>
+
+                      <div>
+                        <span className="text-notion-text-muted block mb-0.5">ยอดตั้งจัดผ่อนคงเหลือ:</span>
+                        <p className="font-bold text-sm text-rose-600 dark:text-rose-400">
+                          {formatCurrency(Math.max(0, parseDigitsOnly(totalPrice) - parseDigitsOnly(downPayment)))}
+                        </p>
+                      </div>
+
+                      <div>
+                        <span className="text-notion-text-muted block mb-0.5">งวดที่ 1 ถึง {Math.max(1, totalInstallments - 1)} ({Math.max(1, totalInstallments - 1)} งวด):</span>
+                        <p className="font-bold text-sm text-notion-accent-blue">
+                          {formatCurrency(parseDigitsOnly(monthlyInstallment))}<span className="text-[10px] font-normal"> / เดือน</span>
+                        </p>
+                      </div>
+
+                      <div className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/30">
+                        <span className="text-amber-800 dark:text-amber-300 font-bold block mb-0.5">🎯 งวดสุดท้าย (งวดที่ {totalInstallments}):</span>
+                        <p className="font-bold text-sm text-amber-700 dark:text-amber-300">
+                          {formatCurrency(
+                            Math.max(
+                              0,
+                              (parseDigitsOnly(totalPrice) - parseDigitsOnly(downPayment)) - 
+                              (parseDigitsOnly(monthlyInstallment) * Math.max(0, totalInstallments - 1))
+                            )
+                          )}
+                        </p>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Payment Method Details & QR Transfer Card */}
+                  {paymentMethod === 'โอนเงิน' && (
+                    <div className="p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-start gap-3">
+                      <div className="p-2 bg-cyan-500/20 rounded-xl shrink-0">
+                        <CreditCard className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                      </div>
+                      <div className="text-xs space-y-1">
+                        <div className="font-bold text-cyan-800 dark:text-cyan-300 flex items-center gap-1.5">
+                          <span>📱 สแกน QR Code / บัญชีรับโอนเงินหน้าร้าน (NYC Store QR)</span>
+                          <NotionBadge variant="info">โอนเงิน / PromptPay</NotionBadge>
+                        </div>
+                        <p className="text-notion-text-muted">
+                          ธนาคารกสิกรไทย (KBANK) • เลขที่บัญชี: <strong className="font-mono text-notion-text-main dark:text-notion-text-darkMain">012-3-45678-9</strong> • ชื่อบัญชี: <strong>บจก. เอ็นวายซี โนชั่น แอคเคาท์ติ้ง</strong>
+                        </p>
+                        <p className="text-stone-500 text-[11px]">
+                          (เมื่อลูกค้ารับโอนเงินดาวน์เรียบร้อย ระบบจะบันทึกสถานะโอนเงินวันทำสัญญา {startDay} {monthNames[startMonth - 1]} พ.ศ. {startYearBE} ให้อัตโนมัติ)
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {paymentMethod === 'เงินสด' && (
+                    <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-3">
+                      <div className="p-2 bg-emerald-500/20 rounded-xl shrink-0">
+                        <ShoppingBag className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <div className="text-xs space-y-1">
+                        <div className="font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                          <span>💵 ชำระเงินสดหน้าร้าน (In-Store Cash Payment)</span>
+                          <NotionBadge variant="success">เงินสดหน้าร้าน</NotionBadge>
+                        </div>
+                        <p className="text-notion-text-muted">
+                          รับชำระเป็นเงินสด ณ เคาน์เตอร์หน้าร้าน บันทึกเข้าบัญชีเงินสดรับประจำวันเรียบร้อย
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 /* Cash Sale Form */
