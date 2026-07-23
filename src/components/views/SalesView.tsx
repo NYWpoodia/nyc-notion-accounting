@@ -134,12 +134,12 @@ export const SalesView: React.FC<SalesViewProps> = ({
     return digitsOnly ? Number(digitsOnly) : 0;
   };
 
-  const [totalPrice, setTotalPrice] = useState<string>('15,000');
+  const [totalPrice, setTotalPrice] = useState<string>('');
 
   // Form Fields - Payment & Installment Terms (Up to 60 Installments)
-  const [downPayment, setDownPayment] = useState<string>('3,000');
+  const [downPayment, setDownPayment] = useState<string>('');
   const [totalInstallments, setTotalInstallments] = useState<number>(12);
-  const [monthlyInstallment, setMonthlyInstallment] = useState<string>('1,000');
+  const [monthlyInstallment, setMonthlyInstallment] = useState<string>('');
   const [dueDateDay, setDueDateDay] = useState<number>(15);
   const now = new Date();
   const [startDay, setStartDay] = useState<number>(now.getDate());
