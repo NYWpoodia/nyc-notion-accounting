@@ -1,4 +1,4 @@
-import { CustomerContract, LedgerItem, PaymentRecord, FollowUpNote, ContractStatus } from '../types';
+import { CustomerContract, CustomerProfile, LedgerItem, PaymentRecord, FollowUpNote, ContractStatus } from '../types';
 import { getTodayIsoDate } from './formatters';
 import realContractsSeed from './realContractsSeed.json';
 import realLedgerSeed from './realLedgerSeed.json';
@@ -7,6 +7,7 @@ const API_BASE_URL = 'http://localhost:3001/api';
 
 const STORAGE_KEYS = {
   CONTRACTS: 'nyc_customer_contracts_v11',
+  CUSTOMERS: 'nyc_customer_profiles_v11',
   LEDGER: 'nyc_daily_ledger_v11',
   THEME: 'nyc_theme_mode',
 };
@@ -158,27 +159,180 @@ export function deleteStoredContract(contractNo: string): CustomerContract[] {
   return filtered;
 }
 
+export function extractInitialProfilesFromContracts(contracts: CustomerContract[]): CustomerProfile[] {
+  const map = new Map<string, CustomerProfile>();
+  contracts.forEach((c) => {
+    if (c.contractNo.startsWith('TEMP-')) return;
+    const key = c.bpCode || c.phone || c.customerName;
+    if (!map.has(key)) {
+      map.set(key, {
+        id: `cust-${c.bpCode || Math.random().toString(36).substring(2, 9)}`,
+        bpCode: c.bpCode || `BP-6907-${Math.floor(1000 + Math.random() * 9000)}`,
+        customerName: c.customerName,
+        phone: c.phone,
+        guarantorName: c.guarantorName,
+        guarantorPhone: c.guarantorPhone,
+        address: c.address,
+        locationPin: c.locationPin,
+        idCardNo: c.idCardNo,
+        createdAt: c.startDate || getTodayIsoDate(),
+      });
+    }
+  });
+  return Array.from(map.values());
+}
+
+export function getStoredCustomerProfiles(): CustomerProfile[] {
+  const data = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
+  if (!data) {
+    const contracts = getStoredContracts();
+    const seeded = extractInitialProfilesFromContracts(contracts);
+    saveStoredCustomerProfiles(seeded);
+    return seeded;
+  }
+  try {
+    const parsed: CustomerProfile[] = JSON.parse(data);
+    if (!Array.isArray(parsed)) {
+      const contracts = getStoredContracts();
+      const seeded = extractInitialProfilesFromContracts(contracts);
+      saveStoredCustomerProfiles(seeded);
+      return seeded;
+    }
+    return parsed;
+  } catch {
+    const contracts = getStoredContracts();
+    const seeded = extractInitialProfilesFromContracts(contracts);
+    saveStoredCustomerProfiles(seeded);
+    return seeded;
+  }
+}
+
+export function saveStoredCustomerProfiles(profiles: CustomerProfile[]): void {
+  localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(profiles));
+}
+
+export function addStoredCustomerProfile(profile: CustomerProfile): CustomerProfile[] {
+  const profiles = getStoredCustomerProfiles();
+  const updated = [profile, ...profiles.filter((p) => p.id !== profile.id && p.bpCode !== profile.bpCode)];
+  saveStoredCustomerProfiles(updated);
+  return updated;
+}
+
+export function updateStoredCustomerProfile(
+  id: string,
+  updatedFields: Partial<CustomerProfile>
+): { updatedProfiles: CustomerProfile[]; updatedContracts: CustomerContract[] } {
+  const profiles = getStoredCustomerProfiles();
+  const index = profiles.findIndex((p) => p.id === id);
+  let targetProfile: CustomerProfile | null = null;
+  if (index !== -1) {
+    profiles[index] = { ...profiles[index], ...updatedFields };
+    targetProfile = profiles[index];
+    saveStoredCustomerProfiles(profiles);
+  }
+
+  // Update associated contracts as well so details stay in sync
+  const contracts = getStoredContracts();
+  let updatedContracts = contracts;
+  if (targetProfile) {
+    const p = targetProfile;
+    updatedContracts = contracts.map((c) => {
+      const bpMatch = c.bpCode && p.bpCode && c.bpCode === p.bpCode;
+      const phoneMatch = c.phone === p.phone;
+      if (bpMatch || phoneMatch) {
+        return {
+          ...c,
+          bpCode: p.bpCode,
+          customerName: p.customerName,
+          phone: p.phone,
+          guarantorName: p.guarantorName,
+          guarantorPhone: p.guarantorPhone,
+          address: p.address,
+          locationPin: p.locationPin,
+        };
+      }
+      return c;
+    });
+    saveStoredContracts(updatedContracts);
+  }
+
+  return { updatedProfiles: profiles, updatedContracts };
+}
+
+export function deleteStoredCustomerProfile(id: string): {
+  updatedProfiles: CustomerProfile[];
+  updatedContracts: CustomerContract[];
+} {
+  const profiles = getStoredCustomerProfiles();
+  const target = profiles.find((p) => p.id === id);
+  const updatedProfiles = profiles.filter((p) => p.id !== id);
+  saveStoredCustomerProfiles(updatedProfiles);
+
+  // If customer profile is deleted, also delete all associated contracts as requested
+  const contracts = getStoredContracts();
+  let updatedContracts = contracts;
+  if (target) {
+    updatedContracts = contracts.filter((c) => {
+      const bpMatch = c.bpCode && target.bpCode && c.bpCode === target.bpCode;
+      const phoneMatch = c.phone === target.phone;
+      const nameMatch = c.customerName === target.customerName;
+      return !(bpMatch || phoneMatch || nameMatch);
+    });
+    saveStoredContracts(updatedContracts);
+  }
+
+  return { updatedProfiles, updatedContracts };
+}
+
 export function addStoredContract(newContract: CustomerContract): CustomerContract[] {
   const contracts = getStoredContracts();
   
-  // If adding a real contract (not TEMP-), clean up any existing TEMP- contract for the same customer
-  let cleanedContracts = contracts;
-  if (!newContract.contractNo.startsWith('TEMP-')) {
-    cleanedContracts = contracts.filter((c) => {
-      const isTemp = c.contractNo.startsWith('TEMP-') || c.productName.includes('รอดำเนินการเปิดสัญญา');
-      if (!isTemp) return true;
-      const bpMatch = c.bpCode && newContract.bpCode && c.bpCode === newContract.bpCode;
-      const phoneMatch = c.phone === newContract.phone;
-      const nameMatch = c.customerName === newContract.customerName;
-      if (bpMatch || phoneMatch || nameMatch) {
-        return false; // Remove temp placeholder record
-      }
-      return true;
-    });
-  }
+  // Filter out old TEMP contracts if any exist
+  const cleanedContracts = contracts.filter((c) => {
+    const isTemp = c.contractNo.startsWith('TEMP-') || c.productName.includes('รอดำเนินการเปิดสัญญา');
+    if (!isTemp) return true;
+    const bpMatch = c.bpCode && newContract.bpCode && c.bpCode === newContract.bpCode;
+    const phoneMatch = c.phone === newContract.phone;
+    const nameMatch = c.customerName === newContract.customerName;
+    return !(bpMatch || phoneMatch || nameMatch);
+  });
 
   const updated = [newContract, ...cleanedContracts];
   saveStoredContracts(updated);
+
+  // Also ensure customer profile exists/is updated in Customer Master Data
+  const profiles = getStoredCustomerProfiles();
+  const existingProfileIndex = profiles.findIndex(
+    (p) => (p.bpCode && newContract.bpCode && p.bpCode === newContract.bpCode) || p.phone === newContract.phone
+  );
+
+  if (existingProfileIndex !== -1) {
+    profiles[existingProfileIndex] = {
+      ...profiles[existingProfileIndex],
+      bpCode: newContract.bpCode || profiles[existingProfileIndex].bpCode,
+      customerName: newContract.customerName || profiles[existingProfileIndex].customerName,
+      phone: newContract.phone || profiles[existingProfileIndex].phone,
+      guarantorName: newContract.guarantorName || profiles[existingProfileIndex].guarantorName,
+      guarantorPhone: newContract.guarantorPhone || profiles[existingProfileIndex].guarantorPhone,
+      address: newContract.address || profiles[existingProfileIndex].address,
+      locationPin: newContract.locationPin || profiles[existingProfileIndex].locationPin,
+    };
+    saveStoredCustomerProfiles(profiles);
+  } else {
+    const newProf: CustomerProfile = {
+      id: `cust-${newContract.bpCode || Math.random().toString(36).substring(2, 9)}`,
+      bpCode: newContract.bpCode || `BP-6907-${Math.floor(1000 + Math.random() * 9000)}`,
+      customerName: newContract.customerName,
+      phone: newContract.phone,
+      guarantorName: newContract.guarantorName,
+      guarantorPhone: newContract.guarantorPhone,
+      address: newContract.address,
+      locationPin: newContract.locationPin,
+      createdAt: getTodayIsoDate(),
+    };
+    saveStoredCustomerProfiles([newProf, ...profiles]);
+  }
+
   return updated;
 }
 

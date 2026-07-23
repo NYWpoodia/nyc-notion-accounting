@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { CustomerContract, LedgerItem, ViewMode } from './types';
+import { CustomerContract, CustomerProfile, LedgerItem, ViewMode } from './types';
 import {
   getStoredContracts,
   saveStoredContracts,
+  getStoredCustomerProfiles,
+  addStoredCustomerProfile,
+  updateStoredCustomerProfile,
+  deleteStoredCustomerProfile,
   getStoredLedger,
   saveStoredLedger,
   executePayment,
@@ -37,6 +41,7 @@ export function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   const [contracts, setContracts] = useState<CustomerContract[]>([]);
+  const [customerProfiles, setCustomerProfiles] = useState<CustomerProfile[]>([]);
   const [ledger, setLedger] = useState<LedgerItem[]>([]);
 
   const [isQuickPayOpen, setIsQuickPayOpen] = useState<boolean>(false);
@@ -47,8 +52,10 @@ export function App() {
 
   useEffect(() => {
     const loadedContracts = getStoredContracts();
+    const loadedProfiles = getStoredCustomerProfiles();
     const loadedLedger = getStoredLedger();
     setContracts(loadedContracts);
+    setCustomerProfiles(loadedProfiles);
     setLedger(loadedLedger);
   }, []);
 
@@ -126,8 +133,9 @@ export function App() {
   };
 
   const handleAddNewContract = (newContract: CustomerContract) => {
-    const updated = addStoredContract(newContract);
-    setContracts(updated);
+    const updatedContracts = addStoredContract(newContract);
+    setContracts(updatedContracts);
+    setCustomerProfiles(getStoredCustomerProfiles());
   };
 
   const handleDeleteContract = (contractNo: string) => {
@@ -138,6 +146,23 @@ export function App() {
   const handleUpdateContractCustomerDetails = (contractNo: string, updatedFields: Partial<CustomerContract>) => {
     const updated = updateContractCustomerDetails(contractNo, updatedFields);
     setContracts(updated);
+  };
+
+  const handleAddCustomerProfile = (profile: CustomerProfile) => {
+    const updated = addStoredCustomerProfile(profile);
+    setCustomerProfiles(updated);
+  };
+
+  const handleUpdateCustomerProfile = (id: string, updatedFields: Partial<CustomerProfile>) => {
+    const { updatedProfiles, updatedContracts } = updateStoredCustomerProfile(id, updatedFields);
+    setCustomerProfiles(updatedProfiles);
+    setContracts(updatedContracts);
+  };
+
+  const handleDeleteCustomerProfile = (id: string) => {
+    const { updatedProfiles, updatedContracts } = deleteStoredCustomerProfile(id);
+    setCustomerProfiles(updatedProfiles);
+    setContracts(updatedContracts);
   };
 
   return (
@@ -178,6 +203,7 @@ export function App() {
           {currentView === 'sales' && (
             <SalesView
               existingContracts={contracts}
+              customerProfiles={customerProfiles}
               onAddContract={handleAddNewContract}
               onAddLedgerIncome={(amount, category, description, refContractNo, refCustomerName) => {
                 handleAddLedgerItem({
@@ -195,10 +221,12 @@ export function App() {
 
           {currentView === 'customers' && (
             <CustomersView
+              customerProfiles={customerProfiles}
               contracts={contracts}
               onQuickPay={(contractNo) => handleOpenQuickPay(contractNo)}
-              onAddContract={handleAddNewContract}
-              onUpdateContractCustomer={handleUpdateContractCustomerDetails}
+              onAddCustomerProfile={handleAddCustomerProfile}
+              onUpdateCustomerProfile={handleUpdateCustomerProfile}
+              onDeleteCustomerProfile={handleDeleteCustomerProfile}
               onDeleteContract={handleDeleteContract}
             />
           )}

@@ -1,5 +1,4 @@
-import React, { useState, useMemo } from 'react';
-import { CustomerContract, ProductCategory } from '../../types';
+import { CustomerContract, CustomerProfile, ProductCategory } from '../../types';
 import { NotionCard } from '../ui/NotionCard';
 import { NotionButton } from '../ui/NotionButton';
 import { NotionBadge } from '../ui/NotionBadge';
@@ -8,6 +7,7 @@ import { ShoppingBag, Search, User, Phone, MapPin, Package, CreditCard, Calendar
 
 interface SalesViewProps {
   existingContracts: CustomerContract[];
+  customerProfiles?: CustomerProfile[];
   onAddContract: (contract: CustomerContract) => void;
   onAddLedgerIncome: (amount: number, category: string, description: string, refContractNo: string, refCustomerName: string) => void;
 }
@@ -41,6 +41,7 @@ const CATEGORY_SUB_MAPPING: Record<ProductCategory, string[]> = {
 
 export const SalesView: React.FC<SalesViewProps> = ({
   existingContracts,
+  customerProfiles = [],
   onAddContract,
   onAddLedgerIncome,
 }) => {
@@ -170,8 +171,19 @@ export const SalesView: React.FC<SalesViewProps> = ({
     setIsAddingNewSub(false);
   };
 
-  // Filter matching buyers by BP Code, Customer Name, Phone, or ID Card No
-  const matchingBuyers = existingContracts.filter((c) => {
+  // Filter matching buyers from Customer Master Profiles first, then fallback to existing contracts
+  const matchingMasterProfiles = customerProfiles.filter((p) => {
+    if (!buyerSearchQuery.trim()) return false;
+    const q = buyerSearchQuery.toLowerCase().trim();
+    return (
+      p.customerName.toLowerCase().includes(q) ||
+      p.phone.includes(q) ||
+      (p.bpCode && p.bpCode.toLowerCase().includes(q)) ||
+      (p.idCardNo && p.idCardNo.includes(q))
+    );
+  });
+
+  const matchingContractsBuyers = existingContracts.filter((c) => {
     if (!buyerSearchQuery.trim()) return false;
     const q = buyerSearchQuery.toLowerCase().trim();
     return (
@@ -195,12 +207,27 @@ export const SalesView: React.FC<SalesViewProps> = ({
     return gNameMatches || cNameMatches || phoneMatches || idMatches || bpMatches;
   });
 
+  const handleSelectExistingBuyerProfile = (p: CustomerProfile) => {
+    setCustomerName(p.customerName);
+    setPhone(p.phone);
+    setAddress(p.address);
+    if (p.locationPin) setLocationPin(p.locationPin);
+    if (p.idCardNo) setIdCardNo(p.idCardNo);
+    if (p.guarantorName) setGuarantorName(p.guarantorName);
+    if (p.guarantorPhone) setGuarantorPhone(p.guarantorPhone);
+    setBpCode(p.bpCode || `BP-6907-${Math.floor(1000 + Math.random() * 9000)}`);
+    setBuyerSearchQuery('');
+    setShowBuyerDropdown(false);
+  };
+
   const handleSelectExistingBuyer = (c: CustomerContract) => {
     setCustomerName(c.customerName);
     setPhone(c.phone);
     setAddress(c.address);
+    if (c.locationPin) setLocationPin(c.locationPin);
     if (c.idCardNo) setIdCardNo(c.idCardNo);
     if (c.guarantorName) setGuarantorName(c.guarantorName);
+    if (c.guarantorPhone) setGuarantorPhone(c.guarantorPhone);
     setBpCode(c.bpCode || `BP-${c.contractNo}`);
     setBuyerSearchQuery('');
     setShowBuyerDropdown(false);
@@ -434,23 +461,45 @@ export const SalesView: React.FC<SalesViewProps> = ({
                     placeholder="พิมพ์ รหัส BP (เช่น 1043342), ชื่อ, เบอร์โทร หรือเลขบัตรประชาชน..."
                     className="w-full px-3 py-2 text-xs rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark text-notion-text-main dark:text-notion-text-darkMain"
                   />
-                  {showBuyerDropdown && matchingBuyers.length > 0 && (
+                  {showBuyerDropdown && (matchingMasterProfiles.length > 0 || matchingContractsBuyers.length > 0) && (
                     <div className="absolute left-0 right-0 top-full mt-1 z-20 max-h-48 overflow-y-auto rounded-xl border border-notion-border-light dark:border-notion-border-dark bg-notion-card-light dark:bg-notion-card-dark divide-y divide-notion-border-light dark:divide-notion-border-dark shadow-notion-md">
-                      {matchingBuyers.slice(0, 5).map((c) => (
+                      {matchingMasterProfiles.slice(0, 5).map((p) => (
                         <div
-                          key={c.id}
-                          onClick={() => handleSelectExistingBuyer(c)}
-                          className="p-2 flex items-center justify-between notion-hover-bg cursor-pointer"
+                          key={p.id}
+                          onClick={() => handleSelectExistingBuyerProfile(p)}
+                          className="p-2.5 flex items-center justify-between notion-hover-bg cursor-pointer bg-cyan-500/5 hover:bg-cyan-500/10"
                         >
                           <div>
-                            <span className="font-bold text-notion-accent-blue">{c.customerName}</span>
-                            <span className="ml-1.5 px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono font-bold text-[10px]">
-                              BP: {c.bpCode || c.contractNo}
+                            <span className="font-bold text-notion-accent-blue">{p.customerName}</span>
+                            <span className="ml-1.5 px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 font-mono font-bold text-[10px]">
+                              BP: {p.bpCode}
                             </span>
-                            <span className="ml-1.5 text-notion-text-muted font-mono">({c.phone})</span>
+                            <span className="ml-1.5 text-notion-text-muted font-mono">({p.phone})</span>
                           </div>
+                          <span className="text-[10px] text-cyan-600 font-semibold bg-cyan-500/10 px-1.5 py-0.5 rounded">
+                            Master Profile
+                          </span>
                         </div>
                       ))}
+
+                      {matchingContractsBuyers
+                        .filter((c) => !matchingMasterProfiles.some((p) => p.bpCode === c.bpCode || p.phone === c.phone))
+                        .slice(0, 5)
+                        .map((c) => (
+                          <div
+                            key={c.id}
+                            onClick={() => handleSelectExistingBuyer(c)}
+                            className="p-2.5 flex items-center justify-between notion-hover-bg cursor-pointer"
+                          >
+                            <div>
+                              <span className="font-bold text-notion-accent-blue">{c.customerName}</span>
+                              <span className="ml-1.5 px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono font-bold text-[10px]">
+                                BP: {c.bpCode || c.contractNo}
+                              </span>
+                              <span className="ml-1.5 text-notion-text-muted font-mono">({c.phone})</span>
+                            </div>
+                          </div>
+                        ))}
                     </div>
                   )}
                 </div>

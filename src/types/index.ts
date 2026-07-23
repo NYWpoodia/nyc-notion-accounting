@@ -24,10 +24,13 @@ export interface CustomerProfile {
   bpCode: string;
   customerName: string;
   phone: string;
+  guarantorName?: string;
+  guarantorPhone?: string;
   address: string;
   locationPin?: string;
   idCardNo?: string;
   createdAt?: string;
+  notes?: string;
 }
 
 export interface PaymentRecord {

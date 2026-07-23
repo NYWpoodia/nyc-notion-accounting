@@ -1,35 +1,60 @@
 import React, { useState } from 'react';
-import { CustomerContract, ProductCategory } from '../../types';
+import { CustomerContract, CustomerProfile, ProductCategory } from '../../types';
 import { NotionCard } from '../ui/NotionCard';
 import { NotionBadge } from '../ui/NotionBadge';
 import { NotionButton } from '../ui/NotionButton';
 import { NotionModal } from '../ui/NotionModal';
 import { SearchFilterBar } from '../ui/SearchFilterBar';
 import { formatCurrency, formatThaiDate, getContractStatusStyle, getTodayIsoDate } from '../../services/formatters';
-import { LayoutGrid, Table, Phone, MapPin, CreditCard, Eye, PlusCircle, Navigation, ExternalLink, UserCheck, ShieldCheck, CheckCircle2, Edit2, Save, Trash2 } from 'lucide-react';
+import {
+  LayoutGrid,
+  Table,
+  Phone,
+  MapPin,
+  CreditCard,
+  Eye,
+  PlusCircle,
+  Navigation,
+  ExternalLink,
+  UserCheck,
+  ShieldCheck,
+  CheckCircle2,
+  Edit2,
+  Save,
+  Trash2,
+  FileText,
+  AlertTriangle,
+  User,
+} from 'lucide-react';
 
 interface CustomersViewProps {
+  customerProfiles: CustomerProfile[];
   contracts: CustomerContract[];
   onQuickPay: (contractNo: string) => void;
-  onAddContract: (contract: CustomerContract) => void;
-  onUpdateContractCustomer?: (contractNo: string, updatedFields: Partial<CustomerContract>) => void;
+  onAddCustomerProfile: (profile: CustomerProfile) => void;
+  onUpdateCustomerProfile?: (id: string, updatedFields: Partial<CustomerProfile>) => void;
+  onDeleteCustomerProfile?: (id: string) => void;
   onDeleteContract?: (contractNo: string) => void;
 }
 
 export const CustomersView: React.FC<CustomersViewProps> = ({
-  contracts,
+  customerProfiles = [],
+  contracts = [],
   onQuickPay,
-  onAddContract,
-  onUpdateContractCustomer,
+  onAddCustomerProfile,
+  onUpdateCustomerProfile,
+  onDeleteCustomerProfile,
   onDeleteContract,
 }) => {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
-  const [selectedContract, setSelectedContract] = useState<CustomerContract | null>(null);
+  
+  // Selected Profile for detail view modal
+  const [selectedProfile, setSelectedProfile] = useState<CustomerProfile | null>(null);
 
-  // New Customer Profile Modal States
+  // New Customer Master Profile Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newBpCode, setNewBpCode] = useState(`BP-6907-${Math.floor(1000 + Math.random() * 9000)}`);
   const [newCustomerName, setNewCustomerName] = useState('');
@@ -42,7 +67,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
 
   // Edit Customer Master Profile Modal States
-  const [editingCustomerContract, setEditingCustomerContract] = useState<CustomerContract | null>(null);
+  const [editingProfile, setEditingProfile] = useState<CustomerProfile | null>(null);
   const [editBpCode, setEditBpCode] = useState('');
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
@@ -52,39 +77,39 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   const [editLocationPin, setEditLocationPin] = useState('');
   const [editSuccessMsg, setEditSuccessMsg] = useState<string | null>(null);
 
-  // Delete Confirmation State
-  const [deleteConfirmContract, setDeleteConfirmContract] = useState<CustomerContract | null>(null);
+  // Delete Customer Confirmation State
+  const [deleteConfirmProfile, setDeleteConfirmProfile] = useState<CustomerProfile | null>(null);
 
-  const handleConfirmDelete = () => {
-    if (deleteConfirmContract && onDeleteContract) {
-      // Close all open modals for this contract first
-      if (selectedContract?.contractNo === deleteConfirmContract.contractNo) setSelectedContract(null);
-      if (editingCustomerContract?.contractNo === deleteConfirmContract.contractNo) setEditingCustomerContract(null);
-      onDeleteContract(deleteConfirmContract.contractNo);
-      setDeleteConfirmContract(null);
-    }
+  // Helper to get linked contracts for a specific customer profile
+  const getCustomerContracts = (profile: CustomerProfile): CustomerContract[] => {
+    return contracts.filter(
+      (c) =>
+        (c.bpCode && profile.bpCode && c.bpCode === profile.bpCode) ||
+        c.phone === profile.phone ||
+        c.customerName === profile.customerName
+    );
   };
 
   // Open Edit Customer Modal Handler
-  const handleOpenEditModal = (c: CustomerContract) => {
-    setEditingCustomerContract(c);
-    setEditBpCode(c.bpCode || '');
-    setEditName(c.customerName || '');
-    setEditPhone(c.phone || '');
-    setEditGuarantorName(c.guarantorName || '');
-    setEditGuarantorPhone(c.guarantorPhone || '');
-    setEditAddress(c.address || '');
-    setEditLocationPin(c.locationPin || '');
+  const handleOpenEditModal = (p: CustomerProfile) => {
+    setEditingProfile(p);
+    setEditBpCode(p.bpCode || '');
+    setEditName(p.customerName || '');
+    setEditPhone(p.phone || '');
+    setEditGuarantorName(p.guarantorName || '');
+    setEditGuarantorPhone(p.guarantorPhone || '');
+    setEditAddress(p.address || '');
+    setEditLocationPin(p.locationPin || '');
     setEditSuccessMsg(null);
   };
 
   // Submit Edit Customer Details
   const handleSaveEditCustomerSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingCustomerContract || !onUpdateContractCustomer) return;
+    if (!editingProfile || !onUpdateCustomerProfile) return;
 
-    onUpdateContractCustomer(editingCustomerContract.contractNo, {
-      bpCode: editBpCode.trim() || undefined,
+    onUpdateCustomerProfile(editingProfile.id, {
+      bpCode: editBpCode.trim(),
       customerName: editName.trim(),
       phone: editPhone.trim(),
       guarantorName: editGuarantorName.trim() || undefined,
@@ -93,11 +118,21 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
       locationPin: editLocationPin.trim() || undefined,
     });
 
-    setEditSuccessMsg('บันทึกการแก้ไขข้อมูลลูกค้า สัญญา และผู้ค้ำประกันเรียบร้อยแล้ว!');
+    setEditSuccessMsg('บันทึกการแก้ไขข้อมูลลูกค้า Master Data เรียบร้อยแล้ว!');
     setTimeout(() => {
       setEditSuccessMsg(null);
-      setEditingCustomerContract(null);
+      setEditingProfile(null);
     }, 1200);
+  };
+
+  // Confirm Delete Customer Profile (and associated contracts)
+  const handleConfirmDeleteCustomer = () => {
+    if (deleteConfirmProfile && onDeleteCustomerProfile) {
+      if (selectedProfile?.id === deleteConfirmProfile.id) setSelectedProfile(null);
+      if (editingProfile?.id === deleteConfirmProfile.id) setEditingProfile(null);
+      onDeleteCustomerProfile(deleteConfirmProfile.id);
+      setDeleteConfirmProfile(null);
+    }
   };
 
   // Auto GPS Location Handler
@@ -119,8 +154,8 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
         }
         setGeoLocating(false);
       },
-      (err) => {
-        alert('ไม่สามารถดึงพิกัด GPS ได้ (กรุณาอนุญาตการเข้าถึงตำแหน่ง Location ในเบราว์เซอร์)');
+      () => {
+        alert('ไม่สามารถดึงพิกัด GPS ได้');
         setGeoLocating(false);
       },
       { timeout: 10000 }
@@ -137,7 +172,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  // Create New Customer Master Profile Submit
+  // Create New Customer Master Profile Submit (No TEMP contract generated)
   const handleCreateCustomerSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCustomerName.trim() || !newPhone.trim() || !newAddress.trim()) {
@@ -145,11 +180,8 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
       return;
     }
 
-    const tempContractNo = `TEMP-${Math.floor(100000 + Math.random() * 900000)}`;
-
-    const newCustomerProfile: CustomerContract = {
-      id: `bp-${newBpCode.trim()}-${Date.now()}`,
-      contractNo: tempContractNo,
+    const newProfile: CustomerProfile = {
+      id: `cust-${newBpCode.trim()}-${Date.now()}`,
       bpCode: newBpCode.trim(),
       customerName: newCustomerName.trim(),
       phone: newPhone.trim(),
@@ -157,22 +189,11 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
       guarantorPhone: newGuarantorPhone.trim() || undefined,
       address: newAddress.trim(),
       locationPin: newLocationPin.trim() || undefined,
-      category: 'มือถือ',
-      productName: 'รอดำเนินการเปิดสัญญาผ่อน/เงินสด',
-      totalPrice: 0,
-      downPayment: 0,
-      monthlyInstallment: 0,
-      totalInstallments: 0,
-      paidInstallments: 0,
-      remainingBalance: 0,
-      dueDateDay: 5,
-      startDate: getTodayIsoDate(),
-      status: 'D0 ชำระปกติ',
-      payments: [],
+      createdAt: getTodayIsoDate(),
     };
 
-    onAddContract(newCustomerProfile);
-    setSaveSuccessMsg(`บันทึกข้อมูลลูกค้ารายใหม่ (BP: ${newBpCode}) สำเร็จ!`);
+    onAddCustomerProfile(newProfile);
+    setSaveSuccessMsg(`บันทึกข้อมูลลูกค้ารายใหม่ (BP: ${newBpCode}) เข้าฐานข้อมูลสำเร็จ!`);
 
     setTimeout(() => {
       setSaveSuccessMsg(null);
@@ -187,23 +208,24 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
     }, 1500);
   };
 
-  // Filter Contracts
-  const filteredContracts = contracts.filter((c) => {
-    if (selectedCategory && c.category !== selectedCategory) return false;
-    if (selectedStatus && c.status !== selectedStatus) return false;
+  // Filter Customer Profiles
+  const filteredProfiles = customerProfiles.filter((p) => {
+    const linked = getCustomerContracts(p);
+    
+    if (selectedCategory && !linked.some((c) => c.category === selectedCategory)) return false;
+    if (selectedStatus && !linked.some((c) => c.status === selectedStatus)) return false;
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      const matchName = c.customerName.toLowerCase().includes(q);
-      const matchBp = c.bpCode?.toLowerCase().includes(q);
-      const matchContractNo = c.contractNo.toLowerCase().includes(q);
-      const matchPhone = c.phone.includes(q);
-      const matchGuarantor = c.guarantorName?.toLowerCase().includes(q);
-      const matchGuarantorPhone = c.guarantorPhone?.includes(q);
-      const matchAddress = c.address.toLowerCase().includes(q);
-      const matchProduct = c.productName.toLowerCase().includes(q);
+      const matchName = p.customerName.toLowerCase().includes(q);
+      const matchBp = p.bpCode?.toLowerCase().includes(q);
+      const matchPhone = p.phone.includes(q);
+      const matchGuarantor = p.guarantorName?.toLowerCase().includes(q);
+      const matchGuarantorPhone = p.guarantorPhone?.includes(q);
+      const matchAddress = p.address.toLowerCase().includes(q);
+      const matchContract = linked.some((c) => c.contractNo.toLowerCase().includes(q) || c.productName.toLowerCase().includes(q));
 
-      return matchName || matchBp || matchContractNo || matchPhone || matchGuarantor || matchGuarantorPhone || matchAddress || matchProduct;
+      return matchName || matchBp || matchPhone || matchGuarantor || matchGuarantorPhone || matchAddress || matchContract;
     }
 
     return true;
@@ -221,7 +243,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
         onStatusChange={setSelectedStatus}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
-        placeholder="ค้นหาชื่อลูกค้า, BP, สัญญา, เบอร์โทร, ผู้ค้ำประกัน, หรือพิกัด GPS..."
+        placeholder="ค้นหาชื่อลูกค้า Master, รหัส BP, เบอร์โทร, สัญญาผ่อน, หรือพิกัด GPS..."
       >
         <NotionButton
           variant="primary"
@@ -231,16 +253,16 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
             setIsAddModalOpen(true);
           }}
         >
-          + เพิ่มข้อมูลลูกค้าใหม่
+          + เพิ่มข้อมูลลูกค้าใหม่ (Master Data)
         </NotionButton>
       </SearchFilterBar>
 
       {/* Main Customers List View (Table / Grid) */}
-      {filteredContracts.length === 0 ? (
+      {filteredProfiles.length === 0 ? (
         <NotionCard className="p-12 text-center text-notion-text-muted space-y-3">
-          <CreditCard className="w-12 h-12 mx-auto text-notion-accent-blue opacity-50" />
-          <p className="font-semibold text-base">ไม่พบข้อมูลลูกค้าหรือสัญญาตามเงื่อนไขที่ค้นหา</p>
-          <p className="text-xs">ลองค้นหาด้วยคำค้นอื่น หรือกดกด "+ เพิ่มข้อมูลลูกค้าใหม่" เพื่อสร้างประวัติลูกค้า</p>
+          <User className="w-12 h-12 mx-auto text-notion-accent-blue opacity-50" />
+          <p className="font-semibold text-base">ไม่พบข้อมูลลูกค้าในฐานข้อมูล</p>
+          <p className="text-xs">กด "+ เพิ่มข้อมูลลูกค้าใหม่ (Master Data)" เพื่อบันทึกประวัติลูกค้าลงในฐานข้อมูล</p>
         </NotionCard>
       ) : viewMode === 'table' ? (
         <NotionCard className="p-0 overflow-hidden">
@@ -248,109 +270,98 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
             <table className="w-full text-xs sm:text-sm text-left">
               <thead className="text-[11px] sm:text-xs text-notion-text-muted dark:text-notion-text-darkMuted uppercase bg-notion-sidebar-light dark:bg-notion-sidebar-dark border-b border-notion-border-light dark:border-notion-border-dark font-bold tracking-tight">
                 <tr>
-                  <th className="px-4 py-3 min-w-[120px]">รหัส BP / สัญญา</th>
-                  <th className="px-4 py-3 min-w-[150px]">ชื่อ-นามสกุล ผู้ซื้อ</th>
+                  <th className="px-4 py-3 min-w-[120px]">รหัส BP ลูกค้า</th>
+                  <th className="px-4 py-3 min-w-[150px]">ชื่อ-นามสกุล ลูกค้า</th>
                   <th className="px-4 py-3 min-w-[150px]">ผู้ค้ำประกัน (Guarantor)</th>
-                  <th className="px-4 py-3 min-w-[100px]">เบอร์โทร</th>
+                  <th className="px-4 py-3 min-w-[110px]">เบอร์โทรศัพท์</th>
                   <th className="px-4 py-3 min-w-[180px]">ที่อยู่ / พิกัด GPS</th>
-                  <th className="px-4 py-3 min-w-[140px]">สินค้าที่ซื้อ</th>
-                  <th className="px-4 py-3 min-w-[100px]">ค่างวด</th>
-                  <th className="px-4 py-3 text-center min-w-[110px]">สถานะ D-Bucket</th>
+                  <th className="px-4 py-3 min-w-[140px]">สัญญาผ่อนที่ครอบครอง</th>
                   <th className="px-4 py-3 text-right min-w-[170px]">การจัดการ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-notion-border-light dark:divide-notion-border-dark">
-                {filteredContracts.map((contract) => {
-                  const statusStyle = getContractStatusStyle(contract.status);
+                {filteredProfiles.map((profile) => {
+                  const linkedContracts = getCustomerContracts(profile);
                   return (
-                    <tr key={contract.id} className="notion-hover-bg transition-colors">
-                      <td className="px-4 py-3.5">
-                        <div className="flex flex-col gap-0.5">
-                          {contract.bpCode && (
-                            <span className="font-mono text-xs font-bold text-cyan-700 dark:text-cyan-400 bg-cyan-500/15 px-2 py-0.5 rounded w-fit">
-                              {contract.bpCode}
-                            </span>
-                          )}
-                          <span className="font-mono font-bold text-notion-accent-blue">
-                            {contract.contractNo}
-                          </span>
-                        </div>
+                    <tr key={profile.id} className="notion-hover-bg transition-colors">
+                      <td className="px-4 py-3.5 font-mono font-bold">
+                        <span className="text-cyan-700 dark:text-cyan-400 bg-cyan-500/15 px-2 py-0.5 rounded">
+                          {profile.bpCode}
+                        </span>
                       </td>
                       <td className="px-4 py-3.5 font-bold text-notion-text-main dark:text-notion-text-darkMain">
-                        {contract.customerName}
+                        {profile.customerName}
                       </td>
-                      <td className="px-4 py-3.5">
-                        {contract.guarantorName ? (
+                      <td className="px-4 py-3.5 text-purple-700 dark:text-purple-300 font-medium">
+                        {profile.guarantorName ? (
                           <div>
-                            <span className="font-bold text-purple-700 dark:text-purple-300 block">{contract.guarantorName}</span>
-                            {contract.guarantorPhone && (
-                              <span className="font-mono text-xs text-purple-600 dark:text-purple-400">📞 {contract.guarantorPhone}</span>
+                            <div>{profile.guarantorName}</div>
+                            {profile.guarantorPhone && (
+                              <span className="text-xs text-notion-text-muted">{profile.guarantorPhone}</span>
                             )}
                           </div>
                         ) : (
-                          <span className="text-stone-400 italic text-xs">- ไม่ระบุ</span>
+                          <span className="text-stone-400 italic">- ไม่มี</span>
                         )}
                       </td>
-                      <td className="px-4 py-3.5 font-mono">{contract.phone}</td>
+                      <td className="px-4 py-3.5 font-mono font-semibold">{profile.phone}</td>
                       <td className="px-4 py-3.5 text-xs">
-                        <div className="truncate max-w-[180px] font-medium">{contract.address}</div>
-                        {contract.locationPin ? (
+                        <div className="truncate max-w-[180px] font-medium">{profile.address}</div>
+                        {profile.locationPin ? (
                           <button
-                            onClick={() => handleOpenGoogleMaps(contract.locationPin!)}
+                            onClick={() => handleOpenGoogleMaps(profile.locationPin!)}
                             className="inline-flex items-center gap-1 text-notion-accent-blue hover:underline font-bold mt-0.5"
                             title="คลิกเพื่อเปิดแผนที่ Google Maps"
                           >
                             <Navigation className="w-3 h-3 text-emerald-500" />
-                            <span>📍 {contract.locationPin}</span>
+                            <span>📍 {profile.locationPin}</span>
                           </button>
                         ) : (
                           <span className="text-stone-400 italic block mt-0.5">- ยังไม่ปักหมุด</span>
                         )}
                       </td>
-                      <td className="px-4 py-3.5 font-medium">{contract.productName}</td>
-                      <td className="px-4 py-3.5 font-bold text-emerald-700 dark:text-emerald-300">
-                        {formatCurrency(contract.monthlyInstallment)}
+                      <td className="px-4 py-3.5">
+                        {linkedContracts.length > 0 ? (
+                          <div className="space-y-1">
+                            <span className="inline-flex items-center gap-1 font-bold text-xs bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded">
+                              <FileText className="w-3 h-3" />
+                              {linkedContracts.length} สัญญา
+                            </span>
+                            <div className="text-[11px] font-mono text-notion-text-muted truncate max-w-[140px]">
+                              {linkedContracts.map((c) => c.contractNo).join(', ')}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold bg-amber-500/15 px-2 py-0.5 rounded">
+                            ยังไม่มีสัญญาผ่อน
+                          </span>
+                        )}
                       </td>
-                      <td className="px-4 py-3.5 text-center">
-                        <NotionBadge variant={statusStyle.variant}>
-                          {statusStyle.label}
-                        </NotionBadge>
-                      </td>
-                      {/* Action Buttons with Edit Button ✏️ */}
                       <td className="px-4 py-3.5 text-right space-x-1">
                         <NotionButton
                           variant="ghost"
                           size="sm"
                           icon={<Eye className="w-3.5 h-3.5" />}
-                          onClick={() => setSelectedContract(contract)}
+                          onClick={() => setSelectedProfile(profile)}
                         >
-                          ดูสัญญา
+                          ดูประวัติ
                         </NotionButton>
                         <NotionButton
                           variant="secondary"
                           size="sm"
                           icon={<Edit2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />}
-                          onClick={() => handleOpenEditModal(contract)}
-                          title="แก้ไขข้อมูลลูกค้า สัญญา ผู้ค้ำประกัน และพิกัด GPS"
+                          onClick={() => handleOpenEditModal(profile)}
+                          title="แก้ไขข้อมูลลูกค้า Master Data"
                         >
                           แก้ไข
                         </NotionButton>
-                        {contract.remainingBalance > 0 && (
-                          <NotionButton
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => onQuickPay(contract.contractNo)}
-                          >
-                            รับชำระ
-                          </NotionButton>
-                        )}
-                        {onDeleteContract && (
+                        {onDeleteCustomerProfile && (
                           <NotionButton
                             variant="ghost"
                             size="sm"
                             icon={<Trash2 className="w-3.5 h-3.5 text-rose-500" />}
-                            onClick={() => setDeleteConfirmContract(contract)}
-                            title="ลบข้อมูลลูกค้า/สัญญา"
+                            onClick={() => setDeleteConfirmProfile(profile)}
+                            title="ลบข้อมูลลูกค้าและสัญญาที่เกี่ยวข้อง"
                           >
                             <span className="text-rose-500">ลบ</span>
                           </NotionButton>
@@ -365,78 +376,66 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
         </NotionCard>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredContracts.map((contract) => {
-            const statusStyle = getContractStatusStyle(contract.status);
+          {filteredProfiles.map((profile) => {
+            const linkedContracts = getCustomerContracts(profile);
             return (
-              <NotionCard key={contract.id} className="space-y-3">
+              <NotionCard key={profile.id} className="space-y-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <div className="flex items-center gap-1.5">
-                      {contract.bpCode && (
-                        <span className="font-mono text-xs font-bold text-cyan-700 bg-cyan-500/15 px-2 py-0.5 rounded">
-                          {contract.bpCode}
-                        </span>
-                      )}
-                      <span className="font-mono text-xs font-bold text-notion-accent-blue bg-notion-accent-blue/10 px-2 py-0.5 rounded">
-                        {contract.contractNo}
-                      </span>
-                    </div>
+                    <span className="font-mono text-xs font-bold text-cyan-700 bg-cyan-500/15 px-2 py-0.5 rounded">
+                      {profile.bpCode}
+                    </span>
                     <h3 className="font-bold text-base text-notion-text-main dark:text-notion-text-darkMain mt-1.5">
-                      {contract.customerName}
+                      {profile.customerName}
                     </h3>
                   </div>
-                  <NotionBadge variant={statusStyle.variant}>
-                    {statusStyle.label}
-                  </NotionBadge>
+                  {linkedContracts.length > 0 ? (
+                    <NotionBadge variant="emerald">
+                      {linkedContracts.length} สัญญาผ่อน
+                    </NotionBadge>
+                  ) : (
+                    <NotionBadge variant="amber">
+                      ยังไม่มีสัญญาผ่อน
+                    </NotionBadge>
+                  )}
                 </div>
 
                 <div className="space-y-1.5 text-xs sm:text-sm text-notion-text-muted border-t border-b border-notion-border-light dark:border-notion-border-dark py-2.5">
                   <div className="flex items-center gap-1.5">
                     <Phone className="w-4 h-4 text-notion-accent-blue" />
-                    <span className="font-bold text-notion-text-main dark:text-notion-text-darkMain">{contract.phone}</span>
+                    <span className="font-bold text-notion-text-main dark:text-notion-text-darkMain">{profile.phone}</span>
                   </div>
-                  {contract.guarantorName && (
+                  {profile.guarantorName && (
                     <div className="flex items-center gap-1.5 text-purple-700 dark:text-purple-300 font-semibold">
                       <UserCheck className="w-4 h-4 text-purple-500" />
-                      <span>ผู้ค้ำ: {contract.guarantorName} {contract.guarantorPhone ? `(${contract.guarantorPhone})` : ''}</span>
+                      <span>ผู้ค้ำ: {profile.guarantorName} {profile.guarantorPhone ? `(${profile.guarantorPhone})` : ''}</span>
                     </div>
                   )}
                   <div className="flex items-start gap-1.5">
                     <MapPin className="w-4 h-4 text-notion-text-muted shrink-0 mt-0.5" />
-                    <span className="truncate">{contract.address}</span>
+                    <span className="truncate">{profile.address}</span>
                   </div>
-                  {contract.locationPin && (
+                  {profile.locationPin && (
                     <div className="flex items-center justify-between pt-1">
                       <span className="text-notion-text-muted">พิกัด GPS:</span>
                       <button
-                        onClick={() => handleOpenGoogleMaps(contract.locationPin!)}
+                        onClick={() => handleOpenGoogleMaps(profile.locationPin!)}
                         className="inline-flex items-center gap-1 text-notion-accent-blue font-bold hover:underline"
                       >
                         <Navigation className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>📍 {contract.locationPin}</span>
+                        <span>📍 {profile.locationPin}</span>
                         <ExternalLink className="w-3 h-3 ml-0.5" />
                       </button>
                     </div>
                   )}
                 </div>
 
-                <div className="flex items-center justify-between text-xs sm:text-sm pt-1">
-                  <div>
-                    <span className="text-notion-text-muted block">สินค้าที่ผ่อน:</span>
-                    <strong className="text-notion-text-main dark:text-notion-text-darkMain">{contract.productName}</strong>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-notion-text-muted block">ยอดคงเหลือ:</span>
-                    <strong className="text-rose-600 dark:text-rose-400 font-bold">{formatCurrency(contract.remainingBalance)}</strong>
-                  </div>
-                </div>
-
-                {/* Grid View Action Buttons with Edit Button ✏️ */}
+                {/* Grid Action Buttons */}
                 <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-notion-border-light dark:border-notion-border-dark flex-wrap">
                   <NotionButton
                     variant="ghost"
                     size="sm"
-                    onClick={() => setSelectedContract(contract)}
+                    onClick={() => setSelectedProfile(profile)}
                   >
                     ดูรายละเอียด
                   </NotionButton>
@@ -444,25 +443,16 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                     variant="secondary"
                     size="sm"
                     icon={<Edit2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />}
-                    onClick={() => handleOpenEditModal(contract)}
+                    onClick={() => handleOpenEditModal(profile)}
                   >
                     แก้ไข
                   </NotionButton>
-                  {contract.remainingBalance > 0 && (
-                    <NotionButton
-                      variant="primary"
-                      size="sm"
-                      onClick={() => onQuickPay(contract.contractNo)}
-                    >
-                      รับชำระเงิน
-                    </NotionButton>
-                  )}
-                  {onDeleteContract && (
+                  {onDeleteCustomerProfile && (
                     <NotionButton
                       variant="ghost"
                       size="sm"
                       icon={<Trash2 className="w-3.5 h-3.5 text-rose-500" />}
-                      onClick={() => setDeleteConfirmContract(contract)}
+                      onClick={() => setDeleteConfirmProfile(profile)}
                     >
                       <span className="text-rose-500">ลบ</span>
                     </NotionButton>
@@ -617,7 +607,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
             </div>
 
             <div className="p-3.5 bg-blue-500/10 rounded-2xl border border-blue-500/20 text-xs sm:text-sm text-blue-700 dark:text-blue-300 font-medium">
-              💡 เมื่อบันทึกแล้ว ข้อมูลลูกค้ารายนี้จะถูกจัดเก็บในฐานข้อมูล สามารถค้นหาตามรหัส BP หรือชื่อ เพื่อนำไปใช้เปิดสัญญาผ่อน/เงินสดในระบบขายหน้าร้านได้ทันที
+              💡 เมื่อบันทึกแล้ว ข้อมูลลูกค้ารายนี้จะถูกจัดเก็บในฐานข้อมูล สามารถเลือกจากระบบขายหน้าร้านเพื่อเปิดสัญญาผ่อนได้ทันที
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
@@ -632,16 +622,16 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
         )}
       </NotionModal>
 
-      {/* EDIT CUSTOMER & GUARANTOR MASTER PROFILE MODAL */}
+      {/* EDIT CUSTOMER MASTER PROFILE MODAL */}
       <NotionModal
-        isOpen={!!editingCustomerContract}
-        onClose={() => setEditingCustomerContract(null)}
+        isOpen={!!editingProfile}
+        onClose={() => setEditingProfile(null)}
         maxWidth="2xl"
-        title={`แก้ไขข้อมูลลูกค้า & ผู้ค้ำประกัน - สัญญา ${editingCustomerContract?.contractNo}`}
-        subtitle={`ลูกค้า: ${editingCustomerContract?.customerName}`}
+        title={`แก้ไขข้อมูลลูกค้า Master Data - BP: ${editingProfile?.bpCode}`}
+        subtitle={`ลูกค้า: ${editingProfile?.customerName}`}
         icon={<Edit2 className="w-6 h-6 text-amber-500" />}
       >
-        {editingCustomerContract && (
+        {editingProfile && (
           <form onSubmit={handleSaveEditCustomerSubmit} className="space-y-4 text-sm sm:text-base">
             {editSuccessMsg && (
               <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-2">
@@ -750,223 +740,183 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
-              <NotionButton type="button" variant="secondary" onClick={() => setEditingCustomerContract(null)}>
+              <NotionButton type="button" variant="secondary" onClick={() => setEditingProfile(null)}>
                 ยกเลิก
               </NotionButton>
-              <NotionButton type="submit" variant="primary" icon={<Save className="w-4 h-4" />}>
-                บันทึกการเปลี่ยนแปลงข้อมูลลูกค้า
+              <NotionButton type="submit" variant="primary">
+                บันทึกการแก้ไข
               </NotionButton>
             </div>
           </form>
         )}
       </NotionModal>
 
-      {/* Contract Details Notion Modal */}
+      {/* VIEW CUSTOMER PROFILE DETAILS & LINKED CONTRACTS MODAL */}
       <NotionModal
-        isOpen={!!selectedContract}
-        onClose={() => setSelectedContract(null)}
-        title={`รายละเอียดสัญญา ${selectedContract?.contractNo}`}
-        subtitle={`ลูกค้า: ${selectedContract?.customerName}`}
-        icon={<CreditCard className="w-5 h-5 text-notion-accent-blue" />}
-        maxWidth="lg"
+        isOpen={!!selectedProfile}
+        onClose={() => setSelectedProfile(null)}
+        maxWidth="3xl"
+        title={`รายละเอียดประวัติลูกค้า - ${selectedProfile?.customerName}`}
+        subtitle={`รหัส BP: ${selectedProfile?.bpCode || '-'} | เบอร์โทร: ${selectedProfile?.phone}`}
+        icon={<User className="w-6 h-6 text-notion-accent-blue" />}
       >
-        {selectedContract && (
-          <div className="space-y-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark text-xs sm:text-sm">
+        {selectedProfile && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark">
               <div>
-                <span className="text-notion-text-muted font-bold block mb-0.5">รหัส BP / เลขที่สัญญา:</span>
-                <div className="flex items-center gap-1.5">
-                  {selectedContract.bpCode && (
-                    <span className="font-mono font-bold text-xs text-cyan-700 bg-cyan-500/15 px-2 py-0.5 rounded">
-                      {selectedContract.bpCode}
-                    </span>
-                  )}
-                  <span className="font-mono font-bold text-xs text-notion-accent-blue bg-notion-accent-blue/10 px-2 py-0.5 rounded">
-                    {selectedContract.contractNo}
-                  </span>
-                </div>
+                <span className="text-xs text-notion-text-muted">ชื่อ-นามสกุล ผู้ซื้อ:</span>
+                <p className="font-bold text-base text-notion-text-main dark:text-notion-text-darkMain">{selectedProfile.customerName}</p>
               </div>
-
               <div>
-                <span className="text-notion-text-muted font-bold block mb-0.5">ชื่อ-นามสกุล ผู้ซื้อ:</span>
-                <p className="font-bold text-sm sm:text-base text-notion-text-main dark:text-notion-text-darkMain">
-                  {selectedContract.customerName}
+                <span className="text-xs text-notion-text-muted">รหัส BP:</span>
+                <p className="font-mono font-bold text-cyan-700 dark:text-cyan-300">{selectedProfile.bpCode}</p>
+              </div>
+              <div>
+                <span className="text-xs text-notion-text-muted">เบอร์โทรศัพท์:</span>
+                <p className="font-mono font-semibold">{selectedProfile.phone}</p>
+              </div>
+              <div>
+                <span className="text-xs text-notion-text-muted">ผู้ค้ำประกัน:</span>
+                <p className="font-semibold text-purple-700 dark:text-purple-300">
+                  {selectedProfile.guarantorName || '-'} {selectedProfile.guarantorPhone ? `(${selectedProfile.guarantorPhone})` : ''}
                 </p>
               </div>
-
-              <div>
-                <span className="text-notion-text-muted font-bold block mb-0.5 flex items-center gap-1">
-                  <Phone className="w-3.5 h-3.5 text-notion-accent-blue" />
-                  <span>เบอร์ติดต่อ ผู้ซื้อ:</span>
-                </span>
-                <p className="font-mono font-bold text-sm sm:text-base text-notion-accent-blue">
-                  {selectedContract.phone}
-                </p>
-              </div>
-
-              <div>
-                <span className="text-notion-text-muted font-bold block mb-0.5 flex items-center gap-1">
-                  <UserCheck className="w-3.5 h-3.5 text-purple-500" />
-                  <span>ชื่อผู้ค้ำประกัน (Guarantor):</span>
-                </span>
-                <p className="font-bold text-sm sm:text-base text-purple-700 dark:text-purple-300">
-                  {selectedContract.guarantorName || '- ไม่ระบุผู้ค้ำประกัน'}
-                </p>
-              </div>
-
-              <div>
-                <span className="text-notion-text-muted font-bold block mb-0.5 flex items-center gap-1">
-                  <Phone className="w-3.5 h-3.5 text-purple-500" />
-                  <span>เบอร์ติดต่อ ผู้ค้ำประกัน:</span>
-                </span>
-                <p className="font-mono font-bold text-sm sm:text-base text-purple-700 dark:text-purple-300">
-                  {selectedContract.guarantorPhone || '- ไม่ระบุเบอร์โทร'}
-                </p>
-              </div>
-
               <div className="sm:col-span-2">
-                <span className="text-notion-text-muted font-bold block mb-0.5 flex items-center gap-1">
-                  <Navigation className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>พิกัด GPS โลเคชั่นบ้านผู้ซื้อ:</span>
-                </span>
-                {selectedContract.locationPin ? (
+                <span className="text-xs text-notion-text-muted">ที่อยู่:</span>
+                <p className="font-medium text-sm">{selectedProfile.address}</p>
+              </div>
+              {selectedProfile.locationPin && (
+                <div className="sm:col-span-2 flex items-center justify-between pt-1">
+                  <span className="text-xs text-notion-text-muted">พิกัด GPS:</span>
                   <button
-                    type="button"
-                    onClick={() => handleOpenGoogleMaps(selectedContract.locationPin!)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-500/30 hover:bg-emerald-500/25 transition-all mt-0.5"
-                    title="คลิกเพื่อนำทางบน Google Maps"
+                    onClick={() => handleOpenGoogleMaps(selectedProfile.locationPin!)}
+                    className="inline-flex items-center gap-1 text-notion-accent-blue font-bold hover:underline text-xs"
                   >
-                    <Navigation className="w-4 h-4 text-emerald-500" />
-                    <span>📍 พิกัด {selectedContract.locationPin}</span>
-                    <ExternalLink className="w-3.5 h-3.5 ml-1" />
-                    <span className="text-xs font-normal underline">(คลิกเปิด Google Maps)</span>
+                    <Navigation className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>📍 {selectedProfile.locationPin}</span>
+                    <ExternalLink className="w-3 h-3 ml-0.5" />
                   </button>
-                ) : (
-                  <p className="text-stone-400 italic text-xs mt-0.5">- ยังไม่ได้ระบุพิกัด GPS</p>
-                )}
-              </div>
-
-              <div className="sm:col-span-2">
-                <span className="text-notion-text-muted font-bold block mb-0.5">ที่อยู่ตามสำเนาทะเบียนบ้าน / ที่พักปัจจุบัน:</span>
-                <p className="font-medium text-notion-text-main dark:text-notion-text-darkMain">
-                  {selectedContract.address}
-                </p>
-              </div>
+                </div>
+              )}
             </div>
 
-            <div className="p-4 rounded-xl border border-notion-border-light dark:border-notion-border-dark space-y-3">
-              <h4 className="font-bold text-sm sm:text-base text-notion-text-main dark:text-notion-text-darkMain">
-                สินค้าที่ซื้อ & เงื่อนไขผ่อนชำระ (สถานะ {selectedContract.status})
+            {/* Linked Contracts List */}
+            <div className="space-y-2">
+              <h4 className="font-bold text-sm sm:text-base flex items-center justify-between">
+                <span>สัญญาผ่อนชำระในครอบครอง</span>
+                <span className="text-xs font-normal text-notion-text-muted">
+                  ({getCustomerContracts(selectedProfile).length} สัญญา)
+                </span>
               </h4>
-              <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm">
-                <div>
-                  <span className="text-notion-text-muted">สินค้าที่ซื้อ:</span>
-                  <p className="font-semibold text-notion-accent-blue mt-0.5">{selectedContract.productName}</p>
+
+              {getCustomerContracts(selectedProfile).length === 0 ? (
+                <div className="p-6 text-center text-amber-600 bg-amber-500/10 rounded-xl border border-amber-500/20 text-sm font-medium">
+                  ยังไม่มีประวัติสัญญาผ่อนชำระ สามารถเลือกจากระบบขายหน้าร้านเพื่อทำสัญญาใหม่ได้ทันที
                 </div>
-                <div>
-                  <span className="text-notion-text-muted">ราคาสินค้ารวม:</span>
-                  <p className="font-bold mt-0.5">{formatCurrency(selectedContract.totalPrice)}</p>
+              ) : (
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                  {getCustomerContracts(selectedProfile).map((contract) => {
+                    const statusStyle = getContractStatusStyle(contract.status);
+                    return (
+                      <div
+                        key={contract.id}
+                        className="p-3 rounded-xl border border-notion-border-light dark:border-notion-border-dark bg-notion-card-light dark:bg-notion-card-dark flex flex-wrap items-center justify-between gap-2"
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-xs text-notion-accent-blue bg-notion-accent-blue/10 px-2 py-0.5 rounded">
+                              {contract.contractNo}
+                            </span>
+                            <NotionBadge variant={statusStyle.variant}>
+                              {statusStyle.label}
+                            </NotionBadge>
+                          </div>
+                          <p className="font-semibold text-sm mt-1">{contract.productName}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-xs text-notion-text-muted block">ยอดคงเหลือ:</span>
+                          <span className="font-bold text-rose-600 dark:text-rose-400">
+                            {formatCurrency(contract.remainingBalance)}
+                          </span>
+                        </div>
+                        {contract.remainingBalance > 0 && (
+                          <NotionButton
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedProfile(null);
+                              onQuickPay(contract.contractNo);
+                            }}
+                          >
+                            รับชำระ
+                          </NotionButton>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-                <div>
-                  <span className="text-notion-text-muted">เงินดาวน์ที่จ่ายแล้ว:</span>
-                  <p className="font-semibold text-emerald-600 mt-0.5">{formatCurrency(selectedContract.downPayment)}</p>
-                </div>
-                <div>
-                  <span className="text-notion-text-muted">ค่างวดต่อเดือน:</span>
-                  <p className="font-bold text-rose-600 mt-0.5">{formatCurrency(selectedContract.monthlyInstallment)}</p>
-                </div>
-                <div>
-                  <span className="text-notion-text-muted">จำนวนงวดที่ผ่อนแล้ว:</span>
-                  <p className="font-semibold mt-0.5">{selectedContract.paidInstallments} / {selectedContract.totalInstallments} งวด</p>
-                </div>
-                <div>
-                  <span className="text-notion-text-muted">ยอดหนี้คงเหลือ:</span>
-                  <p className="font-bold text-rose-600 text-sm sm:text-base mt-0.5">{formatCurrency(selectedContract.remainingBalance)}</p>
-                </div>
-              </div>
+              )}
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-notion-border-light dark:border-notion-border-dark">
-              <div className="flex gap-2 flex-wrap">
-                <NotionButton
-                  variant="secondary"
-                  icon={<Edit2 className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
-                  onClick={() => {
-                    const c = selectedContract;
-                    setSelectedContract(null);
-                    handleOpenEditModal(c);
-                  }}
-                >
-                  ✏️ แก้ไขข้อมูลลูกค้า & ผู้ค้ำประกัน
-                </NotionButton>
-                {onDeleteContract && (
-                  <NotionButton
-                    variant="ghost"
-                    icon={<Trash2 className="w-4 h-4 text-rose-500" />}
-                    onClick={() => {
-                      setDeleteConfirmContract(selectedContract);
-                      setSelectedContract(null);
-                    }}
-                  >
-                    <span className="text-rose-500">🗑️ ลบข้อมูล</span>
-                  </NotionButton>
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <NotionButton variant="secondary" onClick={() => setSelectedContract(null)}>
-                  ปิดหน้าต่าง
-                </NotionButton>
-                {selectedContract.remainingBalance > 0 && (
-                  <NotionButton
-                    variant="primary"
-                    onClick={() => {
-                      const contractNo = selectedContract.contractNo;
-                      setSelectedContract(null);
-                      onQuickPay(contractNo);
-                    }}
-                  >
-                    รับชำระเงินงวดนี้
-                  </NotionButton>
-                )}
-              </div>
+            <div className="flex justify-end gap-2 pt-2 border-t border-notion-border-light dark:border-notion-border-dark">
+              <NotionButton variant="secondary" onClick={() => setSelectedProfile(null)}>
+                ปิดหน้าต่าง
+              </NotionButton>
             </div>
           </div>
         )}
       </NotionModal>
 
-      {/* ===== Delete Confirmation Modal ===== */}
+      {/* ===== DELETE CUSTOMER PROFILE & LINKED CONTRACTS CONFIRMATION MODAL ===== */}
       <NotionModal
-        isOpen={!!deleteConfirmContract}
-        onClose={() => setDeleteConfirmContract(null)}
-        maxWidth="sm"
-        title="ยืนยันการลบข้อมูล"
+        isOpen={!!deleteConfirmProfile}
+        onClose={() => setDeleteConfirmProfile(null)}
+        maxWidth="md"
+        title="ยืนยันการลบข้อมูลลูกค้า Master Data"
         icon={<Trash2 className="w-6 h-6 text-rose-500" />}
       >
-        {deleteConfirmContract && (
+        {deleteConfirmProfile && (
           <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800">
-              <p className="text-sm text-rose-700 dark:text-rose-300 font-semibold mb-3">
-                ⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้? การกระทำนี้ไม่สามารถย้อนกลับได้
-              </p>
-              <div className="space-y-1.5 text-sm">
+            <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 space-y-3">
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="w-6 h-6 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-rose-700 dark:text-rose-300">
+                    ⚠️ คำเตือน: การลบลูกค้ารายนี้จะลบข้อมูลสัญญาผ่อนชำระทั้งหมดที่เกี่ยวข้องออกด้วย!
+                  </p>
+                  <p className="text-xs text-rose-600 dark:text-rose-400 mt-1">
+                    การกระทำนี้ไม่สามารถย้อนกลับได้ โปรดตรวจสอบความถูกต้องก่อนยืนยัน
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 text-sm bg-white dark:bg-notion-bg-dark p-3 rounded-lg border border-rose-200 dark:border-rose-900">
                 <div className="flex items-center gap-2">
-                  <span className="text-notion-text-muted w-24 shrink-0">เลขที่สัญญา:</span>
-                  <span className="font-mono font-bold text-notion-accent-blue">{deleteConfirmContract.contractNo}</span>
+                  <span className="text-notion-text-muted w-24 shrink-0">รหัส BP:</span>
+                  <span className="font-mono font-bold text-cyan-700 dark:text-cyan-300">{deleteConfirmProfile.bpCode}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-notion-text-muted w-24 shrink-0">ชื่อลูกค้า:</span>
-                  <span className="font-bold text-notion-text-main dark:text-notion-text-darkMain">{deleteConfirmContract.customerName}</span>
+                  <span className="font-bold text-notion-text-main dark:text-notion-text-darkMain">{deleteConfirmProfile.customerName}</span>
                 </div>
-                {deleteConfirmContract.bpCode && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-notion-text-muted w-24 shrink-0">รหัส BP:</span>
-                    <span className="font-mono font-semibold text-cyan-700 dark:text-cyan-300">{deleteConfirmContract.bpCode}</span>
-                  </div>
-                )}
                 <div className="flex items-center gap-2">
                   <span className="text-notion-text-muted w-24 shrink-0">เบอร์โทร:</span>
-                  <span className="font-semibold">{deleteConfirmContract.phone}</span>
+                  <span className="font-semibold font-mono">{deleteConfirmProfile.phone}</span>
+                </div>
+                <div className="flex items-start gap-2 pt-1 border-t border-notion-border-light dark:border-notion-border-dark">
+                  <span className="text-notion-text-muted w-24 shrink-0">สัญญาที่ลบด้วย:</span>
+                  <div className="font-semibold text-rose-600 dark:text-rose-400">
+                    {getCustomerContracts(deleteConfirmProfile).length > 0 ? (
+                      <div>
+                        <div>พบ {getCustomerContracts(deleteConfirmProfile).length} สัญญาผ่อนชำระ:</div>
+                        <div className="font-mono text-xs text-notion-text-muted">
+                          {getCustomerContracts(deleteConfirmProfile).map((c) => c.contractNo).join(', ')}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-notion-text-muted italic">ไม่มีสัญญาผ่อนชำระ</span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -974,16 +924,16 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
             <div className="flex gap-3 justify-end">
               <NotionButton
                 variant="secondary"
-                onClick={() => setDeleteConfirmContract(null)}
+                onClick={() => setDeleteConfirmProfile(null)}
               >
                 ยกเลิก
               </NotionButton>
               <NotionButton
                 variant="ghost"
                 icon={<Trash2 className="w-4 h-4 text-rose-500" />}
-                onClick={handleConfirmDelete}
+                onClick={handleConfirmDeleteCustomer}
               >
-                <span className="text-rose-600 font-bold">🗑️ ยืนยันลบข้อมูล</span>
+                <span className="text-rose-600 font-bold">🗑️ ยืนยันลบลูกค้าและข้อมูลสัญญา</span>
               </NotionButton>
             </div>
           </div>
