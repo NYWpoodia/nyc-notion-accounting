@@ -3,7 +3,7 @@ import { CustomerContract } from '../../types';
 import { NotionModal } from '../ui/NotionModal';
 import { NotionButton } from '../ui/NotionButton';
 import { NotionBadge } from '../ui/NotionBadge';
-import { formatCurrency, formatThaiDate, getContractStatusStyle } from '../../services/formatters';
+import { formatCurrency, formatThaiDate, getContractStatusStyle, formatReceiptNoList } from '../../services/formatters';
 import { Printer, FileText, User, Phone, MapPin, ShieldCheck, ShoppingBag, Calendar, Check, AlertCircle, Sparkles, Navigation, Receipt } from 'lucide-react';
 
 interface ContractStatementModalProps {
@@ -49,7 +49,16 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
   const monthlyNum = contract.monthlyInstallment || 0;
   const totalInst = Math.max(1, contract.totalInstallments || 12);
   const regularCount = Math.max(1, totalInst - 1);
-  const finalInstAmount = Math.max(0, financedNum - (monthlyNum * regularCount));
+
+  // Compute final installment amount accurately
+  let finalInstAmount = monthlyNum;
+  if (financedNum > 0 && monthlyNum * totalInst !== financedNum) {
+    finalInstAmount = Math.max(0, financedNum - (monthlyNum * regularCount));
+  }
+
+  // Compute Due Date offset for installments
+  const dueDay = contract.dueDateDay || 15;
+  const monthOffset = startD >= dueDay ? 2 : 1;
 
   // Build Installment Schedule Array
   const scheduleRows = Array.from({ length: totalInst }, (_, idx) => {
@@ -58,14 +67,13 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
     const expectedAmount = isFinal ? finalInstAmount : monthlyNum;
 
     // Compute Due Date for installment
-    let dueMonth = startM + idx;
+    let dueMonth = startM + monthOffset + idx;
     let dueYear = startY;
     while (dueMonth > 12) {
       dueMonth -= 12;
       dueYear += 1;
     }
     const dueYearBE = dueYear > 2500 ? dueYear : dueYear + 543;
-    const dueDay = contract.dueDateDay || 15;
     const dueDateThai = `${dueDay} ${monthNames[dueMonth - 1]} ${dueYearBE}`;
     const dueDateIso = `${dueYear}-${String(dueMonth).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
 
@@ -304,20 +312,22 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-notion-border-light dark:divide-notion-border-dark font-medium">
-                  {/* Row 0: Down Payment */}
-                  <tr className="bg-emerald-500/5">
-                    <td className="px-3 py-2 text-center font-bold text-emerald-700 dark:text-emerald-400">เงินดาวน์</td>
-                    <td className="px-3 py-2 text-stone-600 dark:text-stone-300 font-semibold">วันทำสัญญา ({startD} {monthNames[startM - 1]} {startYearBE})</td>
-                    <td className="px-3 py-2 text-right font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(downNum)}</td>
-                    <td className="px-3 py-2 text-center">
-                      <span className="inline-flex items-center gap-1 font-bold text-[11px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-lg">
-                        <Check className="w-3 h-3" />
-                        ชำระดาวน์แล้ว
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 font-mono font-semibold text-notion-accent-blue">A03AXI-DOWN-{contract.contractNo.slice(-6)}</td>
-                    <td className="px-3 py-2 font-mono text-stone-600 dark:text-stone-300">{startD} {monthNames[startM - 1]} {startYearBE}</td>
-                  </tr>
+                  {/* Row 0: Down Payment (Render ONLY if down payment > 0) */}
+                  {downNum > 0 && (
+                    <tr className="bg-emerald-500/5">
+                      <td className="px-3 py-2 text-center font-bold text-emerald-700 dark:text-emerald-400">เงินดาวน์</td>
+                      <td className="px-3 py-2 text-stone-600 dark:text-stone-300 font-semibold">วันทำสัญญา ({startD} {monthNames[startM - 1]} {startYearBE})</td>
+                      <td className="px-3 py-2 text-right font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(downNum)}</td>
+                      <td className="px-3 py-2 text-center">
+                        <span className="inline-flex items-center gap-1 font-bold text-[11px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-lg">
+                          <Check className="w-3 h-3" />
+                          ชำระดาวน์แล้ว
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 font-mono font-semibold text-notion-accent-blue">A03AXI-DOWN-{contract.contractNo.slice(-6)}</td>
+                      <td className="px-3 py-2 font-mono text-stone-600 dark:text-stone-300">{startD} {monthNames[startM - 1]} {startYearBE}</td>
+                    </tr>
+                  )}
 
                   {/* Monthly Installment Rows 1 to N */}
                   {scheduleRows.map((row) => (
@@ -357,8 +367,8 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-2 font-mono font-bold text-notion-accent-blue">
-                        {row.paymentRecord?.receiptNo || '-'}
+                      <td className="px-3 py-2 font-mono font-bold text-notion-accent-blue text-[11px]">
+                        {formatReceiptNoList(row.paymentRecord?.receiptNo)}
                       </td>
                       <td className="px-3 py-2 font-mono text-stone-600 dark:text-stone-300">
                         {row.paymentRecord ? formatThaiDate(row.paymentRecord.paymentDate) : '-'}

@@ -14015,13 +14015,13 @@
     "category": "เครื่องใช้ไฟฟ้า",
     "productName": "เครื่องปรับอากาศ HAIER",
     "totalPrice": 10068,
-    "downPayment": 1006,
+    "downPayment": 0,
     "monthlyInstallment": 839,
     "totalInstallments": 12,
     "paidInstallments": 4,
     "remainingBalance": 7548,
-    "dueDateDay": 3,
-    "startDate": "2026-01-01",
+    "dueDateDay": 2,
+    "startDate": "2026-04-27",
     "status": "D0 ชำระปกติ",
     "payments": [
       {
@@ -14038,7 +14038,7 @@
       {
         "id": "pay-A03AH136900051-2",
         "contractNo": "A03AH136900051",
-        "receiptNo": "A03AXI0569000132A03AXI0669000120",
+        "receiptNo": "A03AXI0569000132; A03AXI0669000120",
         "customerName": "ณัฐริกา ทุมา",
         "amount": 839,
         "paymentDate": "2026-06-22",
@@ -14049,7 +14049,7 @@
       {
         "id": "pay-A03AH136900051-3",
         "contractNo": "A03AH136900051",
-        "receiptNo": "A03AXI0769000018A03AXI0669000120",
+        "receiptNo": "A03AXI0769000018; A03AXI0669000120",
         "customerName": "ณัฐริกา ทุมา",
         "amount": 839,
         "paymentDate": "2026-07-02",

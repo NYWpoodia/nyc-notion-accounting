@@ -13,6 +13,21 @@ export function formatNumber(amount: number): string {
   return new Intl.NumberFormat('th-TH').format(amount);
 }
 
+// Format multiple receipt codes with semicolon delimiter e.g. "A03AXI0569000132; A03AXI0669000120"
+export function formatReceiptNoList(str?: string): string {
+  if (!str) return '-';
+  const cleanStr = str.trim();
+  if (cleanStr.includes(';')) {
+    return cleanStr.split(';').map(s => s.trim()).filter(Boolean).join('; ');
+  }
+  // Match consecutive receipt codes concatenated without delimiters
+  const matches = cleanStr.match(/A03AXI\d+/g);
+  if (matches && matches.length > 1) {
+    return Array.from(new Set(matches)).join('; ');
+  }
+  return cleanStr;
+}
+
 // Thai Full / Short Date e.g. "22 ก.ค. 2569"
 export function formatThaiDate(dateStr?: string, fullMonth: boolean = false): string {
   if (!dateStr) return '-';
