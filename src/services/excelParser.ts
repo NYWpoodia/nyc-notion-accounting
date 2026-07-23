@@ -108,6 +108,11 @@ export function parseSingleCustomerSheet(
         }
       }
 
+      // isPaid = ชำระครบยอดงวด (>= installmentAmount)
+      // isPartiallyPaid = ชำระบางส่วน (0 < paidAmount < installmentAmount)
+      const isFullyPaid = instAmount > 0 && paidAmount >= instAmount;
+      const isPartiallyPaid = paidAmount > 0 && paidAmount < instAmount;
+
       // Add to schedule array directly from Excel row!
       schedule.push({
         installmentNo: instNo,
@@ -118,23 +123,36 @@ export function parseSingleCustomerSheet(
         paidAmount: paidAmount,
         remainingBalance: remBal !== null ? remBal : undefined,
         receiptNo: formatReceiptNoList(receiptRaw),
-        isPaid: paidAmount > 0 || !!formattedPaidDate,
-        note: noteRaw || undefined,
+        isPaid: isFullyPaid,
+        note: isPartiallyPaid ? `ชำระบางส่วน ฿${paidAmount.toLocaleString('th-TH')}${noteRaw ? '; ' + noteRaw : ''}` : (noteRaw || undefined),
       });
 
-      // Check if payment was made for this installment
-      if (paidAmount > 0 || formattedPaidDate) {
+      // Count paidInstallments only for FULLY PAID installments
+      if (isFullyPaid) {
         paidInstallments++;
         payments.push({
           id: `pay-${sheetName}-${instNo}`,
           contractNo: sheetName,
           receiptNo: formatReceiptNoList(receiptRaw),
           customerName: customerName || sheetName,
-          amount: paidAmount > 0 ? paidAmount : instAmount,
+          amount: paidAmount,
           paymentDate: formattedPaidDate || new Date().toISOString().split('T')[0],
           installmentNo: instNo,
           paymentMethod: noteRaw.includes('ตัวแทน') || noteRaw.includes('โอน') ? 'โอนเงิน' : 'เงินสด',
           note: noteRaw || undefined,
+        });
+      } else if (isPartiallyPaid && formattedPaidDate) {
+        // Record partial payment too (for reference), but don't count as paidInstallments
+        payments.push({
+          id: `pay-partial-${sheetName}-${instNo}`,
+          contractNo: sheetName,
+          receiptNo: formatReceiptNoList(receiptRaw),
+          customerName: customerName || sheetName,
+          amount: paidAmount,
+          paymentDate: formattedPaidDate,
+          installmentNo: instNo,
+          paymentMethod: noteRaw.includes('ตัวแทน') || noteRaw.includes('โอน') ? 'โอนเงิน' : 'เงินสด',
+          note: `ชำระบางส่วน ฿${paidAmount.toLocaleString('th-TH')}${noteRaw ? '; ' + noteRaw : ''}`,
         });
       }
 

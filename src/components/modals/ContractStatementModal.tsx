@@ -81,6 +81,9 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
         const matchPay = contract.payments?.find((p) => p.installmentNo === item.installmentNo);
         const receiptNoStr = item.receiptNo || matchPay?.receiptNo || '';
         const paidDateStr = item.paidDate || matchPay?.paymentDate || '';
+        const itemPaidAmount = item.paidAmount ?? 0;
+        const isFullyPaid = item.isPaid || (itemPaidAmount >= item.installmentAmount && item.installmentAmount > 0);
+        const isPartiallyPaid = !isFullyPaid && itemPaidAmount > 0;
 
         return {
           instNo: item.installmentNo,
@@ -88,8 +91,10 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
           dueDateThai: item.dueDateThai || formatThaiDate(item.dueDate, true),
           dueDateIso: item.dueDate,
           expectedAmount: item.installmentAmount,
-          isPaid: !!item.isPaid || (item.paidAmount !== undefined && item.paidAmount > 0) || !!matchPay,
-          isOverdue: !item.isPaid && !matchPay && item.dueDate < new Date().toISOString().split('T')[0],
+          isPaid: isFullyPaid,
+          isPartiallyPaid,
+          paidAmount: itemPaidAmount,
+          isOverdue: !isFullyPaid && item.dueDate < new Date().toISOString().split('T')[0],
           paymentRecord: matchPay ? {
             ...matchPay,
             receiptNo: receiptNoStr,
@@ -99,7 +104,7 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
             contractNo: contract.contractNo,
             receiptNo: receiptNoStr,
             customerName: contract.customerName,
-            amount: item.paidAmount || item.installmentAmount,
+            amount: itemPaidAmount || item.installmentAmount,
             paymentDate: paidDateStr,
             installmentNo: item.installmentNo,
             paymentMethod: 'โอนเงิน' as const,
@@ -375,6 +380,8 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
                       className={
                         row.isPaid
                           ? 'bg-emerald-500/5'
+                          : (row as any).isPartiallyPaid
+                          ? 'bg-amber-500/8'
                           : row.isOverdue
                           ? 'bg-rose-500/5'
                           : 'notion-hover-bg'
@@ -394,6 +401,11 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
                           <span className="inline-flex items-center gap-1 font-bold text-[11px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-lg">
                             <Check className="w-3 h-3" />
                             ชำระแล้ว
+                          </span>
+                        ) : (row as any).isPartiallyPaid ? (
+                          <span className="inline-flex items-center gap-1 font-bold text-[11px] bg-amber-500/15 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-lg">
+                            <AlertCircle className="w-3 h-3" />
+                            ชำระบางส่วน ฿{((row as any).paidAmount || 0).toLocaleString('th-TH')}
                           </span>
                         ) : row.isOverdue ? (
                           <span className="inline-flex items-center gap-1 font-bold text-[11px] bg-rose-500/15 text-rose-700 dark:text-rose-300 px-2 py-0.5 rounded-lg">
