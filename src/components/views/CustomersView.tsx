@@ -64,6 +64,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   const [newBpCode, setNewBpCode] = useState(`${1040000 + Math.floor(Math.random() * 90000)}`);
   const [newCustomerName, setNewCustomerName] = useState('');
   const [newPhone, setNewPhone] = useState('');
+  const [newIdCardNo, setNewIdCardNo] = useState('');
   const [newGuarantorName, setNewGuarantorName] = useState('');
   const [newGuarantorPhone, setNewGuarantorPhone] = useState('');
   const [newAddress, setNewAddress] = useState('');
@@ -76,6 +77,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   const [editBpCode, setEditBpCode] = useState('');
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
+  const [editIdCardNo, setEditIdCardNo] = useState('');
   const [editGuarantorName, setEditGuarantorName] = useState('');
   const [editGuarantorPhone, setEditGuarantorPhone] = useState('');
   const [editAddress, setEditAddress] = useState('');
@@ -102,6 +104,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
     setEditBpCode(p.bpCode || '');
     setEditName(p.customerName || '');
     setEditPhone(p.phone || '');
+    setEditIdCardNo(p.idCardNo || '');
     setEditGuarantorName(p.guarantorName || '');
     setEditGuarantorPhone(p.guarantorPhone || '');
     setEditAddress(p.address || '');
@@ -118,6 +121,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
       bpCode: editBpCode.trim(),
       customerName: editName.trim(),
       phone: editPhone.trim(),
+      idCardNo: editIdCardNo.trim() || undefined,
       guarantorName: editGuarantorName.trim() || undefined,
       guarantorPhone: editGuarantorPhone.trim() || undefined,
       address: editAddress.trim(),
@@ -200,6 +204,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
       bpCode: newBpCode.trim(),
       customerName: newCustomerName.trim(),
       phone: newPhone.trim(),
+      idCardNo: newIdCardNo.trim() || undefined,
       address: newAddress.trim(),
       locationPin: newLocationPin.trim() || undefined,
       createdAt: getTodayIsoDate(),
@@ -213,6 +218,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
       setIsAddModalOpen(false);
       setNewCustomerName('');
       setNewPhone('');
+      setNewIdCardNo('');
       setNewAddress('');
       setNewLocationPin('');
       setNewBpCode(`${1040000 + Math.floor(Math.random() * 90000)}`);
@@ -230,12 +236,13 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
       const matchName = p.customerName.toLowerCase().includes(q);
       const matchBp = p.bpCode?.toLowerCase().includes(q);
       const matchPhone = p.phone.includes(q);
+      const matchIdCard = p.idCardNo?.toLowerCase().includes(q);
       const matchGuarantor = p.guarantorName?.toLowerCase().includes(q);
       const matchGuarantorPhone = p.guarantorPhone?.includes(q);
       const matchAddress = p.address.toLowerCase().includes(q);
       const matchContract = linked.some((c) => c.contractNo.toLowerCase().includes(q) || c.productName.toLowerCase().includes(q));
 
-      return matchName || matchBp || matchPhone || matchGuarantor || matchGuarantorPhone || matchAddress || matchContract;
+      return matchName || matchBp || matchPhone || matchIdCard || matchGuarantor || matchGuarantorPhone || matchAddress || matchContract;
     }
 
     return true;
@@ -358,7 +365,12 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                             </span>
                           </td>
                           <td className="px-4 py-3.5 font-bold text-notion-text-main dark:text-notion-text-darkMain">
-                            {profile.customerName}
+                            <div>{profile.customerName}</div>
+                            {profile.idCardNo && (
+                              <div className="text-[11px] font-mono text-notion-text-muted font-normal">
+                                🪪 {profile.idCardNo}
+                              </div>
+                            )}
                           </td>
                           <td className="px-4 py-3.5 text-purple-700 dark:text-purple-300 font-medium">
                             {profile.guarantorName ? (
@@ -922,6 +934,17 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                 </div>
               </div>
 
+              <div>
+                <label className="block font-bold text-notion-text-muted mb-1">เลขประจำตัวประชาชน / บัตรคนต่างด้าว / พาสปอร์ต</label>
+                <input
+                  type="text"
+                  value={editIdCardNo}
+                  onChange={(e) => setEditIdCardNo(e.target.value)}
+                  placeholder="เช่น 1509900123456 หรือ 0001234567890"
+                  className="w-full px-3.5 py-2 text-base font-mono rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
+                />
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-notion-text-muted mb-1">ชื่อ-นามสกุล ผู้ค้ำประกัน (Guarantor)</label>
@@ -1019,6 +1042,10 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
               <div>
                 <span className="text-xs text-notion-text-muted">เบอร์โทรศัพท์:</span>
                 <p className="font-mono font-semibold">{selectedProfile.phone}</p>
+              </div>
+              <div>
+                <span className="text-xs text-notion-text-muted">เลขบัตรประชาชน / บัตรคนต่างด้าว:</span>
+                <p className="font-mono font-semibold text-emerald-700 dark:text-emerald-300">{selectedProfile.idCardNo || '-'}</p>
               </div>
               <div>
                 <span className="text-xs text-notion-text-muted">ผู้ค้ำประกัน:</span>
