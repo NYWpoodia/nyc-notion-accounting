@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CustomerContract } from '../../types';
 import { NotionModal } from '../ui/NotionModal';
 import { NotionButton } from '../ui/NotionButton';
 import { NotionBadge } from '../ui/NotionBadge';
 import { formatCurrency, formatThaiDate, getContractStatusStyle, formatReceiptNoList } from '../../services/formatters';
-import { Printer, FileText, User, Phone, MapPin, ShieldCheck, ShoppingBag, Calendar, Check, AlertCircle, Sparkles, Navigation, Receipt } from 'lucide-react';
+import { Printer, FileText, User, Phone, MapPin, ShieldCheck, ShoppingBag, Calendar, Check, AlertCircle, Sparkles, Navigation, Receipt, Edit2 } from 'lucide-react';
+import { EditScheduleModal } from './EditScheduleModal';
 
 interface ContractStatementModalProps {
   isOpen: boolean;
   onClose: () => void;
   contract: CustomerContract | null;
   onQuickPay?: (contractNo: string) => void;
+  onSaveContract?: (updated: CustomerContract) => void;
 }
 
 export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
@@ -18,7 +20,10 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
   onClose,
   contract,
   onQuickPay,
+  onSaveContract,
 }) => {
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
   if (!contract) return null;
 
   const statusStyle = getContractStatusStyle(contract.status);

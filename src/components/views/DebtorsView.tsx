@@ -11,11 +11,13 @@ import { ContractStatementModal } from '../modals/ContractStatementModal';
 interface DebtorsViewProps {
   contracts: CustomerContract[];
   onQuickPay: (contractNo: string) => void;
+  onUpdateContractCustomer?: (contractNo: string, updatedFields: Partial<CustomerContract>) => void;
 }
 
 export const DebtorsView: React.FC<DebtorsViewProps> = ({
   contracts,
   onQuickPay,
+  onUpdateContractCustomer,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -215,6 +217,12 @@ export const DebtorsView: React.FC<DebtorsViewProps> = ({
         onClose={() => setStatementContract(null)}
         contract={statementContract}
         onQuickPay={onQuickPay}
+        onSaveContract={(updated) => {
+          setStatementContract(updated);
+          if (onUpdateContractCustomer) {
+            onUpdateContractCustomer(updated.contractNo, updated);
+          }
+        }}
       />
     </div>
   );

@@ -1010,6 +1010,12 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
         onClose={() => setStatementContract(null)}
         contract={statementContract}
         onQuickPay={onQuickPay}
+        onSaveContract={(updated) => {
+          setStatementContract(updated);
+          if (onUpdateContractCustomer) {
+            onUpdateContractCustomer(updated.contractNo, updated);
+          }
+        }}
       />
     </div>
   );

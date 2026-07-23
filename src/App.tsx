@@ -269,6 +269,7 @@ export function App() {
             <DebtorsView
               contracts={contracts}
               onQuickPay={(contractNo) => handleOpenQuickPay(contractNo)}
+              onUpdateContractCustomer={handleUpdateContractCustomerDetails}
             />
           )}
 

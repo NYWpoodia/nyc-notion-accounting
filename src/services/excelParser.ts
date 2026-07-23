@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
-import { CustomerContract, ProductCategory, ContractStatus } from '../types';
+import { CustomerContract, ProductCategory, ContractStatus, PaymentRecord } from '../types';
+import { formatReceiptNoList } from './formatters';
 
 export async function parseExcelFile(file: File): Promise<CustomerContract[]> {
   const data = await file.arrayBuffer();
@@ -17,7 +18,7 @@ export async function parseExcelFile(file: File): Promise<CustomerContract[]> {
   workbook.SheetNames.forEach((sheetName, index) => {
     const worksheet = workbook.Sheets[sheetName];
     const rawRows = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1 });
-    
+
     if (!rawRows || rawRows.length === 0) return;
 
     const contract = parseSingleCustomerSheet(sheetName, rawRows, category, index);
@@ -27,6 +28,34 @@ export async function parseExcelFile(file: File): Promise<CustomerContract[]> {
   });
 
   return contracts;
+}
+
+function parseExcelDateString(val: any): string | undefined {
+  if (!val) return undefined;
+  if (typeof val === 'number') {
+    // Excel base date 1899-12-30
+    const dateObj = new Date((val - (25567 + 2)) * 86400 * 1000);
+    const yyyy = dateObj.getFullYear();
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (!trimmed || trimmed === '0' || trimmed === '-') return undefined;
+    const parts = trimmed.split(/[\/\.-]/);
+    if (parts.length === 3) {
+      let d = parseInt(parts[0], 10);
+      let m = parseInt(parts[1], 10);
+      let y = parseInt(parts[2], 10);
+      if (y > 2500) y -= 543;
+      if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+        return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      }
+    }
+    return trimmed;
+  }
+  return undefined;
 }
 
 export function parseSingleCustomerSheet(
@@ -45,6 +74,9 @@ export function parseSingleCustomerSheet(
   let totalInstallments = 0;
   let paidInstallments = 0;
   let remainingBalance = 0;
+  let startDate = '2026-04-27';
+  let dueDateDay = 15;
+  const payments: PaymentRecord[] = [];
 
   rows.forEach((row) => {
     if (!Array.isArray(row) || row.length === 0) return;
@@ -52,16 +84,43 @@ export function parseSingleCustomerSheet(
     // Check Installment Table Row (First column is installment number 1, 2, 3...)
     if (typeof row[0] === 'number' && row.length >= 3) {
       const instNo = row[0];
+      const dueVal = row[1];
       const instAmount = Number(row[2]) || 0;
-      const paidDate = row[4];
+      const paidDateRaw = row[4];
       const paidAmount = Number(row[5]) || 0;
       const remBal = row[6] !== undefined ? Number(row[6]) : null;
+      const noteRaw = row[7] ? String(row[7]).trim() : '';
+      const receiptRaw = row[8] ? String(row[8]).trim() : '';
 
       totalInstallments = Math.max(totalInstallments, instNo);
       if (monthlyInstallment === 0 && instAmount > 0) monthlyInstallment = instAmount;
 
-      if (paidAmount > 0 || (paidDate && paidDate !== 0 && paidDate !== '0')) {
+      // Extract Due Date Day from installment 1
+      if (instNo === 1 && dueVal) {
+        const parsedDue = parseExcelDateString(dueVal);
+        if (parsedDue) {
+          const parts = parsedDue.split('-');
+          if (parts.length === 3) {
+            dueDateDay = parseInt(parts[2], 10) || 15;
+          }
+        }
+      }
+
+      // Check if payment was made for this installment
+      const formattedPaidDate = parseExcelDateString(paidDateRaw);
+      if (paidAmount > 0 || formattedPaidDate) {
         paidInstallments++;
+        payments.push({
+          id: `pay-${sheetName}-${instNo}`,
+          contractNo: sheetName,
+          receiptNo: formatReceiptNoList(receiptRaw),
+          customerName: customerName || sheetName,
+          amount: paidAmount > 0 ? paidAmount : instAmount,
+          paymentDate: formattedPaidDate || new Date().toISOString().split('T')[0],
+          installmentNo: instNo,
+          paymentMethod: noteRaw.includes('ตัวแทน') || noteRaw.includes('โอน') ? 'โอนเงิน' : 'เงินสด',
+          note: noteRaw || undefined,
+        });
       }
 
       if (remBal !== null && !isNaN(remBal) && remBal >= 0) {
@@ -82,7 +141,17 @@ export function parseSingleCustomerSheet(
       if (row[4] && (typeof row[4] === 'string' || typeof row[4] === 'number')) guarantorPhone = String(row[4]).trim();
     }
 
-    // Check Product Row
+    // Check Product Row or Start Date Row
+    row.forEach((cell) => {
+      if (typeof cell === 'string' && cell.includes('วันทำสัญญา')) {
+        const idxCell = row.indexOf(cell);
+        if (idxCell !== -1 && row[idxCell + 1]) {
+          const parsedStart = parseExcelDateString(row[idxCell + 1]);
+          if (parsedStart) startDate = parsedStart;
+        }
+      }
+    });
+
     if (
       typeof row[0] === 'string' &&
       (row[0].includes('โทรศัพท์') ||
@@ -106,8 +175,9 @@ export function parseSingleCustomerSheet(
   if (!address) address = 'เชียงใหม่';
   if (!productName) productName = `${category} (สัญญา ${cleanContractNo})`;
 
-  const totalPrice = monthlyInstallment * totalInstallments || 12000;
-  const downPayment = Math.floor(totalPrice * 0.1);
+  const rawFinancedNum = monthlyInstallment * totalInstallments || 12000;
+  const downPayment = Math.round(rawFinancedNum * 0.1);
+  const totalPrice = rawFinancedNum + downPayment;
 
   // Status mapping D0 - D6 & ปิดสัญญาแล้ว
   let status: ContractStatus = 'D0 ชำระปกติ';
@@ -139,9 +209,9 @@ export function parseSingleCustomerSheet(
     totalInstallments,
     paidInstallments,
     remainingBalance,
-    dueDateDay: (index % 28) + 1,
-    startDate: '2026-01-01',
+    dueDateDay: dueDateDay || (index % 28) + 1,
+    startDate,
     status,
-    payments: [],
+    payments,
   };
 }
