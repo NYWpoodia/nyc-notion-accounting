@@ -1,3 +1,4 @@
+import React, { useState, useMemo } from 'react';
 import { CustomerContract, CustomerProfile, ProductCategory } from '../../types';
 import { NotionCard } from '../ui/NotionCard';
 import { NotionButton } from '../ui/NotionButton';
