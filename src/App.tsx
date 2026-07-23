@@ -32,6 +32,18 @@ import { QuickPaymentModal } from './components/modals/QuickPaymentModal';
 import { NotionModal } from './components/ui/NotionModal';
 import { Search } from 'lucide-react';
 
+import {
+  fetchContractsFromDB,
+  fetchCustomerProfilesFromDB,
+  fetchLedgerFromDB,
+  saveContractToDB,
+  saveCustomerProfileToDB,
+  saveLedgerItemToDB,
+  seedContractsToSupabase,
+  seedProfilesToSupabase,
+  seedLedgerToSupabase,
+} from './services/dbService';
+
 export function App() {
   const [currentView, setCurrentView] = useState<ViewMode>('dashboard');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -43,6 +55,7 @@ export function App() {
   const [contracts, setContracts] = useState<CustomerContract[]>([]);
   const [customerProfiles, setCustomerProfiles] = useState<CustomerProfile[]>([]);
   const [ledger, setLedger] = useState<LedgerItem[]>([]);
+  const [isLoadingDB, setIsLoadingDB] = useState<boolean>(true);
 
   const [isQuickPayOpen, setIsQuickPayOpen] = useState<boolean>(false);
   const [selectedPayContractNo, setSelectedPayContractNo] = useState<string>('');
@@ -50,13 +63,21 @@ export function App() {
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // Load Initial Data from Supabase Cloud DB
   useEffect(() => {
-    const loadedContracts = getStoredContracts();
-    const loadedProfiles = getStoredCustomerProfiles();
-    const loadedLedger = getStoredLedger();
-    setContracts(loadedContracts);
-    setCustomerProfiles(loadedProfiles);
-    setLedger(loadedLedger);
+    async function initDB() {
+      setIsLoadingDB(true);
+      const [dbContracts, dbProfiles, dbLedger] = await Promise.all([
+        fetchContractsFromDB(),
+        fetchCustomerProfilesFromDB(),
+        fetchLedgerFromDB(),
+      ]);
+      setContracts(dbContracts);
+      setCustomerProfiles(dbProfiles);
+      setLedger(dbLedger);
+      setIsLoadingDB(false);
+    }
+    initDB();
   }, []);
 
   useEffect(() => {
@@ -90,9 +111,17 @@ export function App() {
   }) => {
     try {
       const { updatedContracts, updatedLedger } = executePayment(data);
-
       setContracts(updatedContracts);
       setLedger(updatedLedger);
+
+      // Sync updated contract and ledger to Supabase Cloud DB
+      const targetContract = updatedContracts.find(c => c.contractNo === data.contractNo);
+      if (targetContract) {
+        saveContractToDB(targetContract);
+      }
+      if (updatedLedger.length > 0) {
+        saveLedgerItemToDB(updatedLedger[0]);
+      }
     } catch (err: any) {
       alert(err.message || 'เกิดข้อผิดพลาดในการรับชำระเงิน');
     }
@@ -101,11 +130,16 @@ export function App() {
   const handleAddLedgerItem = (item: Omit<LedgerItem, 'id'>) => {
     const updated = addLedgerTransaction(item);
     setLedger(updated);
+    if (updated.length > 0) {
+      saveLedgerItemToDB(updated[0]);
+    }
   };
 
   const handleUpdateLedgerItem = (id: string, updatedFields: Partial<LedgerItem>) => {
     const updated = updateLedgerTransaction(id, updatedFields);
     setLedger(updated);
+    const item = updated.find(i => i.id === id);
+    if (item) saveLedgerItemToDB(item);
   };
 
   const handleDeleteLedgerItem = (id: string) => {
@@ -117,18 +151,22 @@ export function App() {
     const merged = [...importedContracts, ...contracts];
     setContracts(merged);
     saveStoredContracts(merged);
+    seedContractsToSupabase(importedContracts);
     setCurrentView('customers');
   };
 
   const handleAddFollowUpNote = (contractNo: string, noteText: string, customDate?: string) => {
     const updated = addContractFollowUpNote(contractNo, noteText, customDate);
     setContracts(updated);
+    const target = updated.find(c => c.contractNo === contractNo);
+    if (target) saveContractToDB(target);
   };
 
   const handleAddNewContract = (newContract: CustomerContract) => {
     const updatedContracts = addStoredContract(newContract);
     setContracts(updatedContracts);
     setCustomerProfiles(getStoredCustomerProfiles());
+    saveContractToDB(newContract);
   };
 
   const handleDeleteContract = (contractNo: string) => {
@@ -139,11 +177,14 @@ export function App() {
   const handleUpdateContractCustomerDetails = (contractNo: string, updatedFields: Partial<CustomerContract>) => {
     const updated = updateContractCustomerDetails(contractNo, updatedFields);
     setContracts(updated);
+    const target = updated.find(c => c.contractNo === contractNo);
+    if (target) saveContractToDB(target);
   };
 
   const handleAddCustomerProfile = (profile: CustomerProfile) => {
     const updated = addStoredCustomerProfile(profile);
     setCustomerProfiles(updated);
+    saveCustomerProfileToDB(profile);
   };
 
   const handleUpdateCustomerProfile = (id: string, updatedFields: Partial<CustomerProfile>) => {
