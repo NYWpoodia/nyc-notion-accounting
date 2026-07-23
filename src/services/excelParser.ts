@@ -17,7 +17,7 @@ export async function parseExcelFile(file: File): Promise<CustomerContract[]> {
 
   workbook.SheetNames.forEach((sheetName, index) => {
     const worksheet = workbook.Sheets[sheetName];
-    const rawRows = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1 });
+    const rawRows = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1, raw: true, defval: null });
 
     if (!rawRows || rawRows.length === 0) return;
 
@@ -31,15 +31,31 @@ export async function parseExcelFile(file: File): Promise<CustomerContract[]> {
 }
 
 function parseExcelDateString(val: any): string | undefined {
-  if (!val) return undefined;
-  if (typeof val === 'number') {
-    // Excel base date 1899-12-30
-    const dateObj = new Date((val - (25567 + 2)) * 86400 * 1000);
-    const yyyy = dateObj.getFullYear();
-    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const dd = String(dateObj.getDate()).padStart(2, '0');
+  if (!val && val !== 0) return undefined;
+
+  // Handle JS Date objects (XLSX sometimes returns these even with raw:true)
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return undefined;
+    // JS Date stores CE year - use UTC to avoid timezone shifts
+    const yyyy = val.getUTCFullYear();
+    const mm = String(val.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(val.getUTCDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
   }
+
+  if (typeof val === 'number') {
+    // Excel serial date (base date = Dec 30, 1899)
+    // Serial 1 = Jan 1 1900, Serial 25569 = Jan 1 1970
+    if (val < 1000) return undefined; // Not a date serial
+    const utcMs = (val - 25569) * 86400 * 1000;
+    const dateObj = new Date(utcMs);
+    if (isNaN(dateObj.getTime())) return undefined;
+    const yyyy = dateObj.getUTCFullYear();
+    const mm = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(dateObj.getUTCDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
   if (typeof val === 'string') {
     const trimmed = val.trim();
     if (!trimmed || trimmed === '0' || trimmed === '-') return undefined;
@@ -48,12 +64,15 @@ function parseExcelDateString(val: any): string | undefined {
       let d = parseInt(parts[0], 10);
       let m = parseInt(parts[1], 10);
       let y = parseInt(parts[2], 10);
+      // Convert Buddhist Era to CE
       if (y > 2500) y -= 543;
-      if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+      if (!isNaN(y) && !isNaN(m) && !isNaN(d) && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
         return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       }
     }
-    return trimmed;
+    // Return as-is if it already looks like ISO format YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    return undefined;
   }
   return undefined;
 }
@@ -162,16 +181,39 @@ export function parseSingleCustomerSheet(
     }
 
     // Check Customer Row (Row starting with 'ลูกค้า')
-    if (row[0] === 'ลูกค้า' || (typeof row[0] === 'string' && row[0].includes('ลูกค้า'))) {
-      if (row[2] && typeof row[2] === 'string') customerName = row[2].replace(/-/g, '').trim();
-      if (row[3] && typeof row[3] === 'string') address = row[3].trim();
-      if (row[4] && (typeof row[4] === 'string' || typeof row[4] === 'number')) phone = String(row[4]).trim();
+    if (typeof row[0] === 'string' && row[0].includes('ลูกค้า')) {
+      // Try col 2 first (C), then other columns for name
+      for (let ci = 1; ci < row.length; ci++) {
+        if (row[ci] && typeof row[ci] === 'string' && row[ci].trim().length > 2 && !row[ci].includes('ลูกค้า')) {
+          if (!customerName) customerName = row[ci].replace(/-/g, '').trim();
+          break;
+        }
+      }
+      // Address usually in col 3 (D)
+      if (row[3] && typeof row[3] === 'string' && row[3].trim().length > 2) address = row[3].trim();
+      // Phone: find a cell with 9-10 digit number
+      for (let ci = 3; ci < row.length; ci++) {
+        if (row[ci] && /^\d{9,10}$/.test(String(row[ci]).trim())) {
+          phone = String(row[ci]).trim();
+          break;
+        }
+      }
     }
 
-    // Check Guarantor Row (Row starting with 'ผู้ค้ำประกัน' or 'ผู้ค้ำ')
-    if (row[0] === 'ผู้ค้ำประกัน1' || (typeof row[0] === 'string' && (row[0].includes('ผู้ค้ำ') || row[0].includes('ผู้ค้ำประกัน')))) {
-      if (row[2] && typeof row[2] === 'string') guarantorName = row[2].replace(/-/g, '').trim();
-      if (row[4] && (typeof row[4] === 'string' || typeof row[4] === 'number')) guarantorPhone = String(row[4]).trim();
+    // Check Guarantor Row
+    if (typeof row[0] === 'string' && (row[0].includes('ผู้ค้ำ') || row[0].includes('ค้ำประกัน'))) {
+      for (let ci = 1; ci < row.length; ci++) {
+        if (row[ci] && typeof row[ci] === 'string' && row[ci].trim().length > 2 && !row[ci].includes('ค้ำ') && !row[ci].includes('ประกัน')) {
+          if (!guarantorName) guarantorName = row[ci].replace(/-/g, '').trim();
+          break;
+        }
+      }
+      for (let ci = 3; ci < row.length; ci++) {
+        if (row[ci] && /^\d{9,10}$/.test(String(row[ci]).trim())) {
+          guarantorPhone = String(row[ci]).trim();
+          break;
+        }
+      }
     }
 
     // Check Product Row or Start Date Row
