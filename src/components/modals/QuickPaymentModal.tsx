@@ -283,31 +283,6 @@ export const QuickPaymentModal: React.FC<QuickPaymentModalProps> = ({
           )}
         </div>
 
-        {/* Select Box Alternative */}
-        <div>
-          <label className="block font-bold text-notion-text-muted mb-1.5">
-            เลือกรหัสสัญญาที่จะรับชำระ
-          </label>
-          <select
-            value={selectedContractNo}
-            onChange={(e) => {
-              setSelectedContractNo(e.target.value);
-              const target = contracts.find((c) => c.contractNo === e.target.value);
-              if (target) setPayAmount(target.monthlyInstallment.toString());
-              setDuplicateWarning(null);
-            }}
-            className="w-full px-4 py-2.5 text-base rounded-2xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark text-notion-text-main dark:text-notion-text-darkMain font-medium"
-          >
-            {contracts
-              .filter((c) => c.remainingBalance > 0)
-              .map((c) => (
-                <option key={c.id} value={c.contractNo}>
-                  {c.contractNo} - {c.customerName} ({c.phone}) [{c.status}] - ค้าง {formatCurrency(c.remainingBalance)}
-                </option>
-              ))}
-          </select>
-        </div>
-
         {/* 2. Receipt No & Customer Summary Card */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="sm:col-span-1">
@@ -388,19 +363,22 @@ export const QuickPaymentModal: React.FC<QuickPaymentModalProps> = ({
           <label className="block font-bold text-notion-text-muted mb-1.5">
             💳 ช่องทางการชำระเงิน
           </label>
-          <div className="grid grid-cols-3 gap-3">
-            {(['โอนเงิน', 'เงินสด', 'บัตรเครดิต'] as const).map((m) => (
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { id: 'โอนเงิน', label: '📱 โอนเงิน (QR บัญชี)' },
+              { id: 'เงินสด', label: '💵 เงินสด' },
+            ].map((m) => (
               <button
-                key={m}
+                key={m.id}
                 type="button"
-                onClick={() => setPaymentMethod(m)}
-                className={`py-2 rounded-2xl font-bold border text-base transition-all ${
-                  paymentMethod === m
+                onClick={() => setPaymentMethod(m.id as any)}
+                className={`py-2.5 rounded-2xl font-bold border text-base transition-all ${
+                  paymentMethod === m.id
                     ? 'bg-notion-accent-blue text-white border-notion-accent-blue shadow-md'
                     : 'bg-notion-sidebar-light dark:bg-notion-sidebar-dark border-notion-border-light text-notion-text-muted'
                 }`}
               >
-                {m}
+                {m.label}
               </button>
             ))}
           </div>
