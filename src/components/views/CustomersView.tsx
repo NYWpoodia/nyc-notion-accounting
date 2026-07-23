@@ -61,7 +61,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
 
   // New Customer Master Profile Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newBpCode, setNewBpCode] = useState(`BP-6907-${Math.floor(1000 + Math.random() * 9000)}`);
+  const [newBpCode, setNewBpCode] = useState(`${1040000 + Math.floor(Math.random() * 90000)}`);
   const [newCustomerName, setNewCustomerName] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newGuarantorName, setNewGuarantorName] = useState('');
@@ -200,8 +200,6 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
       bpCode: newBpCode.trim(),
       customerName: newCustomerName.trim(),
       phone: newPhone.trim(),
-      guarantorName: newGuarantorName.trim() || undefined,
-      guarantorPhone: newGuarantorPhone.trim() || undefined,
       address: newAddress.trim(),
       locationPin: newLocationPin.trim() || undefined,
       createdAt: getTodayIsoDate(),
@@ -215,11 +213,9 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
       setIsAddModalOpen(false);
       setNewCustomerName('');
       setNewPhone('');
-      setNewGuarantorName('');
-      setNewGuarantorPhone('');
       setNewAddress('');
       setNewLocationPin('');
-      setNewBpCode(`BP-6907-${Math.floor(1000 + Math.random() * 9000)}`);
+      setNewBpCode(`${1040000 + Math.floor(Math.random() * 90000)}`);
     }, 1500);
   };
 
@@ -748,7 +744,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
         onClose={() => setIsAddModalOpen(false)}
         maxWidth="2xl"
         title="เพิ่มข้อมูลลูกค้าใหม่ (Customer Master Data)"
-        subtitle="บันทึก รหัส BP, ชื่อ-นามสกุล, ที่อยู่, เบอร์โทร และพิกัด GPS เพื่อนำไปใช้เปิดสัญญาผ่อน/เงินสด"
+        subtitle="บันทึก รหัส BP (ตัวเลข), ชื่อ-นามสกุล, ที่อยู่, เบอร์โทร และพิกัด GPS เพื่อนำไปใช้เปิดสัญญาผ่อน/เงินสด"
         icon={<UserCheck className="w-6 h-6 text-notion-accent-blue" />}
       >
         {saveSuccessMsg ? (
@@ -772,7 +768,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                     required
                     value={newBpCode}
                     onChange={(e) => setNewBpCode(e.target.value)}
-                    placeholder="เช่น BP-6907-0012"
+                    placeholder="เช่น 1043342"
                     className="w-full px-3.5 py-2 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark text-cyan-600 dark:text-cyan-400"
                   />
                 </div>
@@ -804,29 +800,6 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                   placeholder="เช่น นาย สมชาย ใจดี"
                   className="w-full px-3.5 py-2 text-base font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
                 />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-notion-text-muted mb-1">ชื่อ-นามสกุล ผู้ค้ำประกัน (Guarantor)</label>
-                  <input
-                    type="text"
-                    value={newGuarantorName}
-                    onChange={(e) => setNewGuarantorName(e.target.value)}
-                    placeholder="เช่น นายจรินทร์ เมพ่วง"
-                    className="w-full px-3.5 py-2 text-base font-semibold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-notion-text-muted mb-1">เบอร์โทรศัพท์ ผู้ค้ำประกัน</label>
-                  <input
-                    type="tel"
-                    value={newGuarantorPhone}
-                    onChange={(e) => setNewGuarantorPhone(e.target.value)}
-                    placeholder="0891234567"
-                    className="w-full px-3.5 py-2 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
-                  />
-                </div>
               </div>
 
               <div>
@@ -921,7 +894,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                     type="text"
                     value={editBpCode}
                     onChange={(e) => setEditBpCode(e.target.value)}
-                    placeholder="เช่น BP-6907-0015"
+                    placeholder="เช่น 1043342"
                     className="w-full px-3 py-2 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark text-cyan-600 dark:text-cyan-400"
                   />
                 </div>

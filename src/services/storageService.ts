@@ -167,7 +167,7 @@ export function extractInitialProfilesFromContracts(contracts: CustomerContract[
     if (!map.has(key)) {
       map.set(key, {
         id: `cust-${c.bpCode || Math.random().toString(36).substring(2, 9)}`,
-        bpCode: c.bpCode || `BP-6907-${Math.floor(1000 + Math.random() * 9000)}`,
+        bpCode: c.bpCode || `${1040000 + Math.floor(Math.random() * 90000)}`,
         customerName: c.customerName,
         phone: c.phone,
         guarantorName: c.guarantorName,
@@ -321,7 +321,7 @@ export function addStoredContract(newContract: CustomerContract): CustomerContra
   } else {
     const newProf: CustomerProfile = {
       id: `cust-${newContract.bpCode || Math.random().toString(36).substring(2, 9)}`,
-      bpCode: newContract.bpCode || `BP-6907-${Math.floor(1000 + Math.random() * 9000)}`,
+      bpCode: newContract.bpCode || `${1040000 + Math.floor(Math.random() * 90000)}`,
       customerName: newContract.customerName,
       phone: newContract.phone,
       guarantorName: newContract.guarantorName,
