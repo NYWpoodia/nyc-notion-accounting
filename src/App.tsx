@@ -4,6 +4,7 @@ import {
   getStoredContracts,
   saveStoredContracts,
   getStoredCustomerProfiles,
+  saveStoredCustomerProfiles,
   addStoredCustomerProfile,
   updateStoredCustomerProfile,
   deleteStoredCustomerProfile,
@@ -178,16 +179,43 @@ export function App() {
   };
 
   const handleImportContracts = (importedContracts: CustomerContract[]) => {
-    const map = new Map<string, CustomerContract>();
-    // Existing contracts
-    contracts.forEach((c) => map.set(c.contractNo, c));
-    // Overwrite with imported Excel contracts (newly imported contracts take precedence)
-    importedContracts.forEach((c) => map.set(c.contractNo, c));
-
-    const deduplicated = Array.from(map.values());
+    // --- Merge Contracts ---
+    const contractMap = new Map<string, CustomerContract>();
+    contracts.forEach((c) => contractMap.set(c.contractNo, c));
+    importedContracts.forEach((c) => contractMap.set(c.contractNo, c));
+    const deduplicated = Array.from(contractMap.values());
     setContracts(deduplicated);
     saveStoredContracts(deduplicated);
     seedContractsToSupabase(deduplicated);
+
+    // --- Auto-create CustomerProfiles from imported contracts ---
+    const profileMap = new Map<string, CustomerProfile>();
+    // Keep existing profiles
+    customerProfiles.forEach((p) => profileMap.set(p.bpCode, p));
+    // Generate profile from each imported contract (use contractNo as bpCode key if no bpCode)
+    importedContracts.forEach((c) => {
+      const profileKey = c.bpCode || c.contractNo;
+      if (!profileMap.has(profileKey)) {
+        const newProfile: CustomerProfile = {
+          id: `profile-${c.contractNo}`,
+          bpCode: c.bpCode || c.contractNo,
+          customerName: c.customerName,
+          phone: c.phone,
+          guarantorName: c.guarantorName,
+          guarantorPhone: c.guarantorPhone,
+          address: c.address,
+          locationPin: c.locationPin,
+          idCardNo: c.idCardNo,
+          createdAt: new Date().toISOString().split('T')[0],
+        };
+        profileMap.set(profileKey, newProfile);
+      }
+    });
+    const mergedProfiles = Array.from(profileMap.values());
+    setCustomerProfiles(mergedProfiles);
+    saveStoredCustomerProfiles(mergedProfiles);
+    seedProfilesToSupabase(mergedProfiles);
+
     setCurrentView('customers');
   };
 
