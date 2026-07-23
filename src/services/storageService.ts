@@ -6,9 +6,9 @@ import realLedgerSeed from './realLedgerSeed.json';
 const API_BASE_URL = 'http://localhost:3001/api';
 
 const STORAGE_KEYS = {
-  CONTRACTS: 'nyc_customer_contracts_v11',
-  CUSTOMERS: 'nyc_customer_profiles_v11',
-  LEDGER: 'nyc_daily_ledger_v11',
+  CONTRACTS: 'nyc_customer_contracts_v12',
+  CUSTOMERS: 'nyc_customer_profiles_v12',
+  LEDGER: 'nyc_daily_ledger_v12',
   THEME: 'nyc_theme_mode',
 };
 

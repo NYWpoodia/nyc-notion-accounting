@@ -51,9 +51,30 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
   const financedNum = rawFinancedNum;
   const finalInstAmount = monthlyNum;
 
-  // Compute Due Date offset for installments
-  const dueDay = contract.dueDateDay || 15;
-  const monthOffset = startD >= dueDay ? 2 : 1;
+  // Determine Due Day (default to 2 if 0 or undefined)
+  const dueDay = contract.dueDateDay && contract.dueDateDay > 0 ? contract.dueDateDay : 2;
+
+  // Determine Installment 1 Due Month & Year
+  let firstDueM = 6;
+  let firstDueY = 2026;
+
+  if (contract.firstInstallmentDueDate) {
+    const parts = contract.firstInstallmentDueDate.split('-');
+    if (parts.length === 3) {
+      firstDueY = parseInt(parts[0], 10);
+      firstDueM = parseInt(parts[1], 10);
+    }
+  } else if (contract.startDate) {
+    const parts = contract.startDate.split('-');
+    if (parts.length === 3) {
+      const sY = parseInt(parts[0], 10);
+      const sM = parseInt(parts[1], 10);
+      const sD = parseInt(parts[2], 10);
+      firstDueY = sY;
+      // If contract day >= dueDay (e.g. 27 April >= 2), 1st installment is in month +2 (June)
+      firstDueM = sD >= dueDay ? sM + 2 : sM + 1;
+    }
+  }
 
   // Build Installment Schedule Array
   const scheduleRows = Array.from({ length: totalInst }, (_, idx) => {
@@ -61,13 +82,11 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
     const isFinal = instNo === totalInst;
     const expectedAmount = isFinal ? finalInstAmount : monthlyNum;
 
-    // Compute Due Date for installment
-    let dueMonth = startM + monthOffset + idx;
-    let dueYear = startY;
-    while (dueMonth > 12) {
-      dueMonth -= 12;
-      dueYear += 1;
-    }
+    // Compute Due Month & Year for installment idx
+    let rawM = firstDueM + idx;
+    let dueYear = firstDueY + Math.floor((rawM - 1) / 12);
+    let dueMonth = ((rawM - 1) % 12) + 1;
+
     const dueYearBE = dueYear > 2500 ? dueYear : dueYear + 543;
     const dueDateThai = `${dueDay} ${monthNames[dueMonth - 1]} ${dueYearBE}`;
     const dueDateIso = `${dueYear}-${String(dueMonth).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
