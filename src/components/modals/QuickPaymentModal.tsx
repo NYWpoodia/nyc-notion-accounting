@@ -100,12 +100,13 @@ export const QuickPaymentModal: React.FC<QuickPaymentModalProps> = ({
         if (target) {
           setPayAmount(target.monthlyInstallment.toString());
         }
-      } else if (contracts.length > 0) {
-        const firstOverdue = contracts.find((c) => c.remainingBalance > 0);
-        if (firstOverdue) {
-          setSelectedContractNo(firstOverdue.contractNo);
-          setPayAmount(firstOverdue.monthlyInstallment.toString());
-        }
+        setReceiptNo(generateReceiptNo());
+      } else {
+        setSelectedContractNo('');
+        setSearchQuery('');
+        setPayAmount('');
+        setFineAmount('');
+        setReceiptNo('');
       }
     }
   }, [isOpen, initialContractNo, contracts]);
@@ -167,6 +168,9 @@ export const QuickPaymentModal: React.FC<QuickPaymentModalProps> = ({
   const handleSelectContract = (c: CustomerContract) => {
     setSelectedContractNo(c.contractNo);
     setPayAmount(c.monthlyInstallment.toString());
+    if (!receiptNo) {
+      setReceiptNo(generateReceiptNo());
+    }
     setSearchQuery('');
     setDuplicateWarning(null);
   };
@@ -304,7 +308,7 @@ export const QuickPaymentModal: React.FC<QuickPaymentModalProps> = ({
             <span className="text-xs text-notion-text-muted block mt-1">รูปแบบ: A03AXI + เดือน + ปี69 + ลำดับ</span>
           </div>
 
-          {selectedContract && statusStyle && (
+          {selectedContract && statusStyle ? (
             <div className="sm:col-span-2 p-3.5 rounded-2xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark space-y-1.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 font-bold text-base">
@@ -319,6 +323,14 @@ export const QuickPaymentModal: React.FC<QuickPaymentModalProps> = ({
               <div className="flex items-center justify-between text-xs sm:text-sm pt-1">
                 <span>ค่างวดประจำเดือน: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{formatCurrency(selectedContract.monthlyInstallment)}</strong></span>
                 <span>ยอดค้างรวมสัญญา: <strong className="text-rose-600 dark:text-rose-400 font-bold">{formatCurrency(selectedContract.remainingBalance)}</strong></span>
+              </div>
+            </div>
+          ) : (
+            <div className="sm:col-span-2 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center gap-3">
+              <Search className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <div className="text-xs">
+                <span className="font-bold text-amber-900 dark:text-amber-200 block">ยังไม่ได้เลือกลูกหนี้</span>
+                <p className="text-notion-text-muted">พิมพ์ค้นหาเลขสัญญา ชื่อ หรือเบอร์โทรศัพท์ในช่อง 1. ด้านบน เพื่อเลือกลูกหนี้ที่จะชำระเงิน</p>
               </div>
             </div>
           )}
