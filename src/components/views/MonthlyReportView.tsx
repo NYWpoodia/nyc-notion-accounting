@@ -8,6 +8,8 @@ import { NotionModal } from '../ui/NotionModal';
 import { formatCurrency, formatThaiDate, format24HourTime, getContractStatusStyle, getTodayIsoDate } from '../../services/formatters';
 import { Printer, Calendar, FileText, Store, Plus, Clock, MessageSquarePlus, CheckCircle2, Check, AlertCircle, PieChart, FileSpreadsheet, Download, Eye, Edit2, Navigation, Save, User, ShieldCheck, Send, Search, X } from 'lucide-react';
 
+import { ContractStatementModal } from '../modals/ContractStatementModal';
+
 interface MonthlyReportViewProps {
   contracts: CustomerContract[];
   onQuickPay: (contractNo: string) => void;
@@ -27,6 +29,9 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('all-debtors');
   const [sortBy, setSortBy] = useState<'name' | 'contractNo' | 'dueDate' | 'installment'>('name');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Contract Printable Statement Modal State
+  const [statementContract, setStatementContract] = useState<CustomerContract | null>(null);
 
   // 1. Customer Master Profile & Guarantor Edit Modal State (Opened by Eye 👁️)
   const [selectedCustomerContract, setSelectedCustomerContract] = useState<CustomerContract | null>(null);
@@ -859,9 +864,21 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
                 <NotionButton type="button" variant="secondary" onClick={() => setSelectedCustomerContract(null)}>
                   ปิดหน้าต่าง
                 </NotionButton>
-                <NotionButton type="button" variant="primary" icon={<Edit2 className="w-4 h-4" />} onClick={() => setIsEditingCustomer(true)}>
-                  แก้ไขข้อมูล
-                </NotionButton>
+                <div className="flex items-center gap-2">
+                  <NotionButton
+                    type="button"
+                    variant="secondary"
+                    icon={<FileText className="w-4 h-4 text-notion-accent-blue" />}
+                    onClick={() => {
+                      setStatementContract(selectedCustomerContract);
+                    }}
+                  >
+                    🖨️ พิมพ์สรุปสัญญา (A4)
+                  </NotionButton>
+                  <NotionButton type="button" variant="primary" icon={<Edit2 className="w-4 h-4" />} onClick={() => setIsEditingCustomer(true)}>
+                    แก้ไขข้อมูล
+                  </NotionButton>
+                </div>
               </div>
             </div>
           ) : (
@@ -986,6 +1003,14 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
           )
         )}
       </NotionModal>
+
+      {/* Contract Printable A4 Statement Modal */}
+      <ContractStatementModal
+        isOpen={!!statementContract}
+        onClose={() => setStatementContract(null)}
+        contract={statementContract}
+        onQuickPay={onQuickPay}
+      />
     </div>
   );
 };

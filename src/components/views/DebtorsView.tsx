@@ -5,7 +5,8 @@ import { NotionBadge } from '../ui/NotionBadge';
 import { NotionButton } from '../ui/NotionButton';
 import { SearchFilterBar } from '../ui/SearchFilterBar';
 import { formatCurrency, getContractStatusStyle } from '../../services/formatters';
-import { AlertCircle, Calendar, Phone, Send, CheckCircle2, Clock } from 'lucide-react';
+import { AlertCircle, Calendar, Phone, FileText } from 'lucide-react';
+import { ContractStatementModal } from '../modals/ContractStatementModal';
 
 interface DebtorsViewProps {
   contracts: CustomerContract[];
@@ -19,7 +20,7 @@ export const DebtorsView: React.FC<DebtorsViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
-  const [notifiedId, setNotifiedId] = useState<string | null>(null);
+  const [statementContract, setStatementContract] = useState<CustomerContract | null>(null);
 
   // Helper for D-Bucket Sorting Rank (D6 > D5 > D4 > D3 > D2 > D1 > D0)
   const getDBucketRank = (status: string): number => {
@@ -176,7 +177,15 @@ export const DebtorsView: React.FC<DebtorsViewProps> = ({
                         {statusStyle.label}
                       </NotionBadge>
                     </td>
-                    <td className="px-4 py-3.5 text-right">
+                    <td className="px-4 py-3.5 text-right space-x-1.5">
+                      <NotionButton
+                        variant="ghost"
+                        size="sm"
+                        icon={<FileText className="w-3.5 h-3.5 text-notion-accent-blue" />}
+                        onClick={() => setStatementContract(contract)}
+                      >
+                        สรุปสัญญา A4
+                      </NotionButton>
                       <NotionButton
                         variant="primary"
                         size="sm"
@@ -199,6 +208,14 @@ export const DebtorsView: React.FC<DebtorsViewProps> = ({
           </table>
         </div>
       </NotionCard>
+
+      {/* Printable Contract Statement A4 Modal */}
+      <ContractStatementModal
+        isOpen={!!statementContract}
+        onClose={() => setStatementContract(null)}
+        contract={statementContract}
+        onQuickPay={onQuickPay}
+      />
     </div>
   );
 };

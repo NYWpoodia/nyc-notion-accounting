@@ -4,7 +4,8 @@ import { NotionCard } from '../ui/NotionCard';
 import { NotionButton } from '../ui/NotionButton';
 import { NotionBadge } from '../ui/NotionBadge';
 import { formatCurrency, getTodayIsoDate } from '../../services/formatters';
-import { ShoppingBag, Search, User, Phone, MapPin, Package, CreditCard, Calendar, CheckCircle2, ShieldCheck, Sparkles, UserCheck, Shield, Plus, Tag, Layers, Navigation } from 'lucide-react';
+import { ShoppingBag, Search, User, Phone, MapPin, Package, CreditCard, Calendar, CheckCircle2, ShieldCheck, Sparkles, UserCheck, Shield, Plus, Tag, Layers, Navigation, FileText, Printer } from 'lucide-react';
+import { ContractStatementModal } from '../modals/ContractStatementModal';
 
 interface SalesViewProps {
   existingContracts: CustomerContract[];
@@ -47,6 +48,8 @@ export const SalesView: React.FC<SalesViewProps> = ({
   onAddLedgerIncome,
 }) => {
   const [saleType, setSaleType] = useState<'เงินผ่อน' | 'เงินสด'>('เงินผ่อน');
+  const [statementContract, setStatementContract] = useState<CustomerContract | null>(null);
+  const [createdContractForPrint, setCreatedContractForPrint] = useState<CustomerContract | null>(null);
 
   // Buyer Search & Auto-fill State (Searches by BP, Name, Phone, or ID Card No)
   const [buyerSearchQuery, setBuyerSearchQuery] = useState('');
@@ -339,6 +342,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
     };
 
     onAddContract(newContract);
+    setCreatedContractForPrint(newContract);
 
     // Auto sync income to Daily Ledger
     if (saleType === 'เงินสด') {
@@ -363,21 +367,18 @@ export const SalesView: React.FC<SalesViewProps> = ({
       `เปิดสัญญาขายสำเร็จ! สัญญาเลขที่ ${contractNo} (${customerName}) บันทึกข้อมูลเข้าฐานข้อมูลและซิงค์ลงสมุดบัญชีประจำวันให้อัตโนมัติแล้ว`
     );
 
-    // Reset Form
-    setTimeout(() => {
-      setSuccessMsg(null);
-      setContractNo('');
-      setBpCode('');
-      setCustomerName('');
-      setGuarantorName('');
-      setPhone('');
-      setAddress('');
-      setIdCardNo('');
-      setBrand('');
-      setModel('');
-      setColor('');
-      setSerialNo('');
-    }, 2000);
+    // Clear form inputs
+    setContractNo('');
+    setBpCode('');
+    setCustomerName('');
+    setGuarantorName('');
+    setPhone('');
+    setAddress('');
+    setIdCardNo('');
+    setBrand('');
+    setModel('');
+    setColor('');
+    setSerialNo('');
   };
 
   return (
@@ -434,6 +435,29 @@ export const SalesView: React.FC<SalesViewProps> = ({
             บันทึกการขายสำเร็จเรียบร้อย!
           </h3>
           <p className="text-xs text-notion-text-muted max-w-md mx-auto">{successMsg}</p>
+          {createdContractForPrint && (
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <NotionButton
+                type="button"
+                variant="primary"
+                icon={<Printer className="w-4 h-4" />}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={() => setStatementContract(createdContractForPrint)}
+              >
+                🖨️ ดูและพิมพ์สรุปสัญญา (A4 Portrait)
+              </NotionButton>
+              <NotionButton
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setSuccessMsg(null);
+                  setCreatedContractForPrint(null);
+                }}
+              >
+                ➕ เปิดสัญญาถัดไป
+              </NotionButton>
+            </div>
+          )}
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -1085,6 +1109,13 @@ export const SalesView: React.FC<SalesViewProps> = ({
           </NotionCard>
         </form>
       )}
+
+      {/* Contract Printable A4 Statement Modal */}
+      <ContractStatementModal
+        isOpen={!!statementContract}
+        onClose={() => setStatementContract(null)}
+        contract={statementContract}
+      />
     </div>
   );
 };
