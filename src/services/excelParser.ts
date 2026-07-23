@@ -175,7 +175,8 @@ export function parseSingleCustomerSheet(
         });
       }
 
-      if (remBal !== null && !isNaN(remBal) && remBal >= 0) {
+      // Only update remainingBalance when we have a POSITIVE balance (not overwrite with 0 from unpaid rows)
+      if (remBal !== null && !isNaN(remBal) && remBal > 0) {
         remainingBalance = remBal;
       }
     }
@@ -257,18 +258,34 @@ export function parseSingleCustomerSheet(
   // Status mapping D0 - D6 & ปิดสัญญาแล้ว
   // Count ONLY installments whose due date has ALREADY PASSED and are NOT paid
   let status: ContractStatus = 'D0 ชำระปกติ';
-  if (remainingBalance === 0 && totalInstallments > 0 && paidInstallments >= totalInstallments) {
+
+  // Use Thailand local date (UTC+7)
+  const nowUtc = new Date();
+  const thaiOffset = 7 * 60 * 60 * 1000;
+  const thaiNow = new Date(nowUtc.getTime() + thaiOffset);
+  const todayIso = thaiNow.toISOString().split('T')[0];
+
+  if (paidInstallments > 0 && paidInstallments >= totalInstallments && totalInstallments > 0) {
     status = 'ปิดสัญญาแล้ว';
   } else {
-    const todayIso = new Date().toISOString().split('T')[0];
     let overdueCount = 0;
 
-    if (schedule.length > 0) {
-      // Use exact schedule dates from Excel
-      overdueCount = schedule.filter((s) => !s.isPaid && s.dueDate && s.dueDate < todayIso).length;
-    } else {
-      // Fallback: count based on paidInstallments vs expected paid by now
-      overdueCount = Math.max(0, paidInstallments - totalInstallments);
+    // Try 1: Use exact schedule dates from Excel
+    const validScheduleDates = schedule.filter((s) => /^\d{4}-\d{2}-\d{2}$/.test(s.dueDate || ''));
+    if (validScheduleDates.length > 0) {
+      overdueCount = validScheduleDates.filter((s) => !s.isPaid && s.dueDate! < todayIso).length;
+    } else if (startDate && monthlyInstallment > 0) {
+      // Fallback: estimate based on contract start date + dueDateDay
+      // How many installments should have been paid by today?
+      const startParts = startDate.split('-');
+      const startYear = parseInt(startParts[0], 10);
+      const startMonth = parseInt(startParts[1], 10);
+      const todayParts = todayIso.split('-');
+      const todayYear = parseInt(todayParts[0], 10);
+      const todayMonth = parseInt(todayParts[1], 10);
+      const monthsElapsed = (todayYear - startYear) * 12 + (todayMonth - startMonth);
+      const expectedPaid = Math.min(totalInstallments, Math.max(0, monthsElapsed));
+      overdueCount = Math.max(0, expectedPaid - paidInstallments);
     }
 
     const capped = Math.min(6, overdueCount);
