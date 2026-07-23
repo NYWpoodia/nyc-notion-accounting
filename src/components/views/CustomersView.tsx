@@ -346,10 +346,9 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                   <thead className="text-[11px] sm:text-xs text-notion-text-muted dark:text-notion-text-darkMuted uppercase bg-notion-sidebar-light dark:bg-notion-sidebar-dark border-b border-notion-border-light dark:border-notion-border-dark font-bold tracking-tight">
                     <tr>
                       <th className="px-4 py-3 min-w-[120px]">รหัส BP ลูกค้า</th>
-                      <th className="px-4 py-3 min-w-[150px]">ชื่อ-นามสกุล ลูกค้า</th>
-                      <th className="px-4 py-3 min-w-[150px]">ผู้ค้ำประกัน (Guarantor)</th>
-                      <th className="px-4 py-3 min-w-[110px]">เบอร์โทรศัพท์</th>
-                      <th className="px-4 py-3 min-w-[180px]">ที่อยู่ / พิกัด GPS</th>
+                      <th className="px-4 py-3 min-w-[160px]">ชื่อ-นามสกุล ลูกค้า</th>
+                      <th className="px-4 py-3 min-w-[170px]">ผู้ค้ำประกัน (Guarantor)</th>
+                      <th className="px-4 py-3 min-w-[120px]">เบอร์โทรศัพท์ลูกค้า</th>
                       <th className="px-4 py-3 min-w-[140px]">สัญญาผ่อนที่ครอบครอง</th>
                       <th className="px-4 py-3 text-right min-w-[170px]">การจัดการ</th>
                     </tr>
@@ -375,9 +374,11 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                           <td className="px-4 py-3.5 text-purple-700 dark:text-purple-300 font-medium">
                             {profile.guarantorName ? (
                               <div>
-                                <div>{profile.guarantorName}</div>
-                                {profile.guarantorPhone && (
-                                  <span className="text-xs text-notion-text-muted">{profile.guarantorPhone}</span>
+                                <div className="font-bold">{profile.guarantorName}</div>
+                                {profile.guarantorPhone ? (
+                                  <span className="text-xs font-mono text-notion-text-muted block mt-0.5">{profile.guarantorPhone}</span>
+                                ) : (
+                                  <span className="text-[11px] text-stone-400 italic block mt-0.5">- ไม่มีเบอร์</span>
                                 )}
                               </div>
                             ) : (
@@ -385,21 +386,6 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                             )}
                           </td>
                           <td className="px-4 py-3.5 font-mono font-semibold">{profile.phone}</td>
-                          <td className="px-4 py-3.5 text-xs">
-                            <div className="truncate max-w-[180px] font-medium">{profile.address}</div>
-                            {profile.locationPin ? (
-                              <button
-                                onClick={() => handleOpenGoogleMaps(profile.locationPin!)}
-                                className="inline-flex items-center gap-1 text-notion-accent-blue hover:underline font-bold mt-0.5"
-                                title="คลิกเพื่อเปิดแผนที่ Google Maps"
-                              >
-                                <Navigation className="w-3 h-3 text-emerald-500" />
-                                <span>📍 {profile.locationPin}</span>
-                              </button>
-                            ) : (
-                              <span className="text-stone-400 italic block mt-0.5">- ยังไม่ปักหมุด</span>
-                            )}
-                          </td>
                           <td className="px-4 py-3.5">
                             {linkedContracts.length > 0 ? (
                               <div className="space-y-1">
