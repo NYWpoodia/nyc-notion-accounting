@@ -404,30 +404,6 @@ export const QuickPaymentModal: React.FC<QuickPaymentModalProps> = ({
               </button>
             ))}
           </div>
-
-          {paymentMethod === 'โอนเงิน' && (
-            <div className="mt-2.5 p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-xs space-y-1">
-              <div className="font-bold text-cyan-800 dark:text-cyan-300 flex items-center justify-between">
-                <span>📱 บัญชีรับโอนเงิน / PromptPay QR หน้าร้าน</span>
-                <NotionBadge variant="info">สแกน/โอนเงิน</NotionBadge>
-              </div>
-              <p className="text-notion-text-muted">
-                ธนาคารกสิกรไทย (KBANK) • เลขที่บัญชี: <strong className="font-mono text-notion-text-main dark:text-notion-text-darkMain">012-3-45678-9</strong> • บจก. เอ็นวายซี โนชั่น แอคเคาท์ติ้ง
-              </p>
-            </div>
-          )}
-
-          {paymentMethod === 'เงินสด' && (
-            <div className="mt-2.5 p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs space-y-1">
-              <div className="font-bold text-emerald-800 dark:text-emerald-300 flex items-center justify-between">
-                <span>💵 รับชำระด้วยเงินสดหน้าร้าน</span>
-                <NotionBadge variant="success">เงินสดหน้าร้าน</NotionBadge>
-              </div>
-              <p className="text-notion-text-muted">
-                รับชำระเป็นเงินสด ณ เคาน์เตอร์หน้าร้าน บันทึกเข้ารายรับประจำวันเรียบร้อย
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Thai Date & 24-Hour Time Selectors */}

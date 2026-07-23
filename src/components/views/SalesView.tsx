@@ -1019,44 +1019,6 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       </div>
                     </div>
                   </div>
-
-                  {/* Payment Method Details & QR Transfer Card */}
-                  {paymentMethod === 'โอนเงิน' && (
-                    <div className="p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-start gap-3">
-                      <div className="p-2 bg-cyan-500/20 rounded-xl shrink-0">
-                        <CreditCard className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
-                      </div>
-                      <div className="text-xs space-y-1">
-                        <div className="font-bold text-cyan-800 dark:text-cyan-300 flex items-center gap-1.5">
-                          <span>📱 สแกน QR Code / บัญชีรับโอนเงินหน้าร้าน (NYC Store QR)</span>
-                          <NotionBadge variant="info">โอนเงิน / PromptPay</NotionBadge>
-                        </div>
-                        <p className="text-notion-text-muted">
-                          ธนาคารกสิกรไทย (KBANK) • เลขที่บัญชี: <strong className="font-mono text-notion-text-main dark:text-notion-text-darkMain">012-3-45678-9</strong> • ชื่อบัญชี: <strong>บจก. เอ็นวายซี โนชั่น แอคเคาท์ติ้ง</strong>
-                        </p>
-                        <p className="text-stone-500 text-[11px]">
-                          (เมื่อลูกค้ารับโอนเงินดาวน์เรียบร้อย ระบบจะบันทึกสถานะโอนเงินวันทำสัญญา {startDay} {monthNames[startMonth - 1]} พ.ศ. {startYearBE} ให้อัตโนมัติ)
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {paymentMethod === 'เงินสด' && (
-                    <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-3">
-                      <div className="p-2 bg-emerald-500/20 rounded-xl shrink-0">
-                        <ShoppingBag className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                      </div>
-                      <div className="text-xs space-y-1">
-                        <div className="font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-                          <span>💵 ชำระเงินสดหน้าร้าน (In-Store Cash Payment)</span>
-                          <NotionBadge variant="success">เงินสดหน้าร้าน</NotionBadge>
-                        </div>
-                        <p className="text-notion-text-muted">
-                          รับชำระเป็นเงินสด ณ เคาน์เตอร์หน้าร้าน บันทึกเข้าบัญชีเงินสดรับประจำวันเรียบร้อย
-                        </p>
-                      </div>
-                    </div>
-                  )}
                 </>
               ) : (
                 /* Cash Sale Form */
