@@ -5,7 +5,7 @@ import { NotionBadge } from '../ui/NotionBadge';
 import { NotionButton } from '../ui/NotionButton';
 import { SearchFilterBar } from '../ui/SearchFilterBar';
 import { formatCurrency, getContractStatusStyle } from '../../services/formatters';
-import { AlertCircle, Calendar, Phone, FileText } from 'lucide-react';
+import { AlertCircle, Calendar, Phone, FileText, Clock } from 'lucide-react';
 import { ContractStatementModal } from '../modals/ContractStatementModal';
 
 interface DebtorsViewProps {
