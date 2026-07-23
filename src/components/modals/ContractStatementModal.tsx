@@ -42,19 +42,14 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
   }
   const startYearBE = startY > 2500 ? startY : startY + 543;
 
-  // Financial calculations
-  const priceNum = contract.totalPrice || 0;
-  const downNum = contract.downPayment || 0;
-  const financedNum = Math.max(0, priceNum - downNum);
+  // Financial calculations with Backward Down Payment Computation
   const monthlyNum = contract.monthlyInstallment || 0;
   const totalInst = Math.max(1, contract.totalInstallments || 12);
-  const regularCount = Math.max(1, totalInst - 1);
-
-  // Compute final installment amount accurately
-  let finalInstAmount = monthlyNum;
-  if (financedNum > 0 && monthlyNum * totalInst !== financedNum) {
-    finalInstAmount = Math.max(0, financedNum - (monthlyNum * regularCount));
-  }
+  const rawFinancedNum = monthlyNum * totalInst;
+  const downNum = contract.downPayment > 0 ? contract.downPayment : Math.round(rawFinancedNum * 0.1);
+  const priceNum = contract.totalPrice && contract.totalPrice > rawFinancedNum ? contract.totalPrice : rawFinancedNum + downNum;
+  const financedNum = rawFinancedNum;
+  const finalInstAmount = monthlyNum;
 
   // Compute Due Date offset for installments
   const dueDay = contract.dueDateDay || 15;
@@ -312,22 +307,20 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-notion-border-light dark:divide-notion-border-dark font-medium">
-                  {/* Row 0: Down Payment (Render ONLY if down payment > 0) */}
-                  {downNum > 0 && (
-                    <tr className="bg-emerald-500/5">
-                      <td className="px-3 py-2 text-center font-bold text-emerald-700 dark:text-emerald-400">เงินดาวน์</td>
-                      <td className="px-3 py-2 text-stone-600 dark:text-stone-300 font-semibold">วันทำสัญญา ({startD} {monthNames[startM - 1]} {startYearBE})</td>
-                      <td className="px-3 py-2 text-right font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(downNum)}</td>
-                      <td className="px-3 py-2 text-center">
-                        <span className="inline-flex items-center gap-1 font-bold text-[11px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-lg">
-                          <Check className="w-3 h-3" />
-                          ชำระดาวน์แล้ว
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 font-mono font-semibold text-notion-accent-blue">A03AXI-DOWN-{contract.contractNo.slice(-6)}</td>
-                      <td className="px-3 py-2 font-mono text-stone-600 dark:text-stone-300">{startD} {monthNames[startM - 1]} {startYearBE}</td>
-                    </tr>
-                  )}
+                  {/* Row 0: Down Payment (Always rendered for every contract) */}
+                  <tr className="bg-emerald-500/5">
+                    <td className="px-3 py-2 text-center font-bold text-emerald-700 dark:text-emerald-400">เงินดาวน์</td>
+                    <td className="px-3 py-2 text-stone-600 dark:text-stone-300 font-semibold">วันทำสัญญา ({startD} {monthNames[startM - 1]} {startYearBE})</td>
+                    <td className="px-3 py-2 text-right font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(downNum)}</td>
+                    <td className="px-3 py-2 text-center">
+                      <span className="inline-flex items-center gap-1 font-bold text-[11px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-lg">
+                        <Check className="w-3 h-3" />
+                        ชำระดาวน์แล้ว
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 font-mono font-semibold text-notion-accent-blue">A03AXI-DOWN-{contract.contractNo.slice(-6)}</td>
+                    <td className="px-3 py-2 font-mono text-stone-600 dark:text-stone-300">{startD} {monthNames[startM - 1]} {startYearBE}</td>
+                  </tr>
 
                   {/* Monthly Installment Rows 1 to N */}
                   {scheduleRows.map((row) => (
