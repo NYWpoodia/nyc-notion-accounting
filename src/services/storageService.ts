@@ -28,33 +28,17 @@ const REAL_LEDGER: LedgerItem[] = realLedgerSeed as LedgerItem[];
 export function getStoredContracts(): CustomerContract[] {
   const data = localStorage.getItem(STORAGE_KEYS.CONTRACTS);
   if (!data) {
-    saveStoredContracts(REAL_CONTRACTS);
-    return REAL_CONTRACTS;
+    // No localStorage data at all → return empty array (don't auto-seed mock data)
+    return [];
   }
   try {
     const parsed: CustomerContract[] = JSON.parse(data);
-    if (!Array.isArray(parsed) || parsed.length === 0 || !parsed[0].status.startsWith('D')) {
-      saveStoredContracts(REAL_CONTRACTS);
-      return REAL_CONTRACTS;
-    }
-    // Ensure existing contracts also get guarantorPhone populated if missing
-    let updated = false;
-    parsed.forEach((c, idx) => {
-      if (c.guarantorName && !c.guarantorPhone) {
-        if (c.guarantorName.includes('จรินทร์')) {
-          c.guarantorPhone = '0972345436';
-        } else {
-          c.guarantorPhone = `089${String(1000000 + (idx * 37) % 8999999).padStart(7, '0')}`;
-        }
-        updated = true;
-      }
-    });
-    if (updated) {
-      saveStoredContracts(parsed);
+    if (!Array.isArray(parsed)) {
+      return [];
     }
     return parsed;
   } catch {
-    return REAL_CONTRACTS;
+    return [];
   }
 }
 

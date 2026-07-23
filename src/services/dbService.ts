@@ -143,11 +143,14 @@ function mapRowToLedger(row: any): LedgerItem {
 export async function fetchContractsFromDB(): Promise<CustomerContract[]> {
   try {
     const { data, error } = await supabase.from(TABLES.CONTRACTS).select('*');
-    if (error || !data || data.length === 0) {
-      console.warn('Supabase DB empty or table not created yet. Loading local seed data...');
+    if (error) {
+      console.error('Supabase fetch contracts error:', error);
+      // Fallback to localStorage if available
+      return getStoredContracts();
+    }
+    if (!data || data.length === 0) {
+      // DB is empty (after wipe or fresh start) — use localStorage if available
       const local = getStoredContracts();
-      // Try to seed Supabase asynchronously
-      seedContractsToSupabase(local);
       return local;
     }
     const contracts = data.map(mapRowToContract);
