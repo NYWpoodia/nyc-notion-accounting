@@ -625,19 +625,6 @@ export const SalesView: React.FC<SalesViewProps> = ({
                   />
                 </div>
 
-                <div>
-                  <label className="block font-semibold text-notion-text-muted mb-1">
-                    เลขบัตรประชาชน ผู้ซื้อ
-                  </label>
-                  <input
-                    type="text"
-                    value={idCardNo}
-                    onChange={(e) => setIdCardNo(e.target.value)}
-                    placeholder="1509900..."
-                    className="w-full px-3 py-2 rounded-xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-mono"
-                  />
-                </div>
-
                 <div className="sm:col-span-3">
                   <label className="block font-semibold text-notion-text-muted mb-1">
                     ที่อยู่ตามสัญญา *
