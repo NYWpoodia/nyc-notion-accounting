@@ -177,23 +177,13 @@ export const DebtorsView: React.FC<DebtorsViewProps> = ({
                       </NotionBadge>
                     </td>
                     <td className="px-4 py-3.5 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <NotionButton
-                          variant="ghost"
-                          size="sm"
-                          icon={notifiedId === contract.id ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Send className="w-4 h-4" />}
-                          onClick={() => handleSimulateNotification(contract.id, contract.customerName)}
-                        >
-                          {notifiedId === contract.id ? 'ส่งเตือนแล้ว!' : 'แจ้งเตือน'}
-                        </NotionButton>
-                        <NotionButton
-                          variant="primary"
-                          size="sm"
-                          onClick={() => onQuickPay(contract.contractNo)}
-                        >
-                          รับชำระเงิน
-                        </NotionButton>
-                      </div>
+                      <NotionButton
+                        variant="primary"
+                        size="sm"
+                        onClick={() => onQuickPay(contract.contractNo)}
+                      >
+                        รับชำระเงิน
+                      </NotionButton>
                     </td>
                   </tr>
                 );
