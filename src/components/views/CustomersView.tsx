@@ -756,7 +756,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
         onClose={() => setIsAddModalOpen(false)}
         maxWidth="2xl"
         title="เพิ่มข้อมูลลูกค้าใหม่ (Customer Master Data)"
-        subtitle="บันทึก รหัส BP (ตัวเลข), ชื่อ-นามสกุล, ที่อยู่, เบอร์โทร และพิกัด GPS เพื่อนำไปใช้เปิดสัญญาผ่อน/เงินสด"
+        subtitle="บันทึก รหัส BP, ชื่อ-นามสกุล, เบอร์โทร, เลขบัตรประชาชน และที่อยู่ลูกค้า"
         icon={<UserCheck className="w-6 h-6 text-notion-accent-blue" />}
       >
         {saveSuccessMsg ? (
@@ -769,10 +769,12 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
           </div>
         ) : (
           <form onSubmit={handleCreateCustomerSubmit} className="space-y-4 text-sm sm:text-base">
-            <div className="p-4 rounded-2xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-4 sm:p-5 rounded-2xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark space-y-4">
+              
+              {/* Row 1: BP Code & Phone */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1">
+                  <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1.5 text-xs sm:text-sm">
                     รหัส BP ลูกค้า *
                   </label>
                   <input
@@ -781,13 +783,13 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                     value={newBpCode}
                     onChange={(e) => setNewBpCode(e.target.value)}
                     placeholder="เช่น 1043342"
-                    className="w-full px-3.5 py-2 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark text-cyan-600 dark:text-cyan-400"
+                    className="w-full px-3.5 py-2.5 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark text-cyan-600 dark:text-cyan-400"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1">
-                    เบอร์โทรศัพท์ติดต่อ ผู้ซื้อ *
+                  <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1.5 text-xs sm:text-sm">
+                    เบอร์โทรศัพท์ติดต่อ *
                   </label>
                   <input
                     type="tel"
@@ -795,42 +797,43 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value)}
                     placeholder="0812345678"
-                    className="w-full px-3.5 py-2 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
+                    className="w-full px-3.5 py-2.5 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1">
-                    ชื่อ-นามสกุล ลูกค้า ผู้ซื้อ *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newCustomerName}
-                    onChange={(e) => setNewCustomerName(e.target.value)}
-                    placeholder="เช่น นาย สมชาย ใจดี"
-                    className="w-full px-3.5 py-2 text-base font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1">
-                    เลขบัตรประจำตัวประชาชน / บัตรคนต่างด้าว
-                  </label>
-                  <input
-                    type="text"
-                    value={newIdCardNo}
-                    onChange={(e) => setNewIdCardNo(e.target.value)}
-                    placeholder="เช่น 1509900123456 หรือ 0001234567890"
-                    className="w-full px-3.5 py-2 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark text-emerald-600 dark:text-emerald-400"
-                  />
-                </div>
-              </div>
-
+              {/* Row 2: Customer Name */}
               <div>
-                <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1">
+                <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1.5 text-xs sm:text-sm">
+                  ชื่อ-นามสกุล ลูกค้า ผู้ซื้อ *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newCustomerName}
+                  onChange={(e) => setNewCustomerName(e.target.value)}
+                  placeholder="เช่น นาย สมชาย ใจดี"
+                  className="w-full px-3.5 py-2.5 text-base font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
+                />
+              </div>
+
+              {/* Row 3: ID Card / Foreigner Card Number */}
+              <div>
+                <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1.5 text-xs sm:text-sm">
+                  เลขประจำตัวประชาชน / บัตรคนต่างด้าว / พาสปอร์ต
+                </label>
+                <input
+                  type="text"
+                  value={newIdCardNo}
+                  onChange={(e) => setNewIdCardNo(e.target.value)}
+                  placeholder="เช่น 1509900123456 หรือ 0001234567890"
+                  className="w-full px-3.5 py-2.5 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark text-emerald-600 dark:text-emerald-400"
+                />
+              </div>
+
+              {/* Row 4: Address */}
+              <div>
+                <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1.5 text-xs sm:text-sm">
                   ที่อยู่ตามสำเนาทะเบียนบ้าน / ที่พักปัจจุบัน *
                 </label>
                 <textarea
@@ -839,13 +842,14 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                   value={newAddress}
                   onChange={(e) => setNewAddress(e.target.value)}
                   placeholder="ระบุที่อยู่ บ้านเลขที่ หมู่บ้าน ตำบล อำเภอ จังหวัด..."
-                  className="w-full px-3.5 py-2 text-base font-medium rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
+                  className="w-full px-3.5 py-2.5 text-base font-medium rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
                 />
               </div>
 
+              {/* Row 5: GPS Location Pin */}
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="font-bold text-notion-text-main dark:text-notion-text-darkMain flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                  <label className="font-bold text-notion-text-main dark:text-notion-text-darkMain flex items-center gap-1.5 text-xs sm:text-sm">
                     <Navigation className="w-4 h-4 text-notion-accent-blue" />
                     <span>พิกัด GPS / ลิงก์ Google Maps โลเคชั่นบ้านลูกค้า</span>
                   </label>
@@ -866,13 +870,13 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                     value={newLocationPin}
                     onChange={(e) => setNewLocationPin(e.target.value)}
                     placeholder="พิกัด GPS เช่น 18.7883, 98.9853 หรือแปะลิงก์ Google Maps..."
-                    className="flex-1 px-3.5 py-2 text-base font-mono rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
+                    className="flex-1 px-3.5 py-2.5 text-base font-mono rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
                   />
                   {newLocationPin && (
                     <button
                       type="button"
                       onClick={() => handleOpenGoogleMaps(newLocationPin)}
-                      className="px-3.5 py-2 bg-notion-accent-blue text-white font-bold text-xs rounded-xl flex items-center gap-1 shrink-0"
+                      className="px-3.5 py-2.5 bg-notion-accent-blue text-white font-bold text-xs rounded-xl flex items-center gap-1 shrink-0"
                       title="ทดสอบเปิดใน Google Maps"
                     >
                       <ExternalLink className="w-4 h-4" />
@@ -913,91 +917,83 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
               </div>
             )}
 
-            <div className="p-4 rounded-2xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-4 sm:p-5 rounded-2xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark space-y-4">
+              
+              {/* Row 1: BP Code & Phone */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-notion-text-muted mb-1">รหัส BP ลูกค้า</label>
+                  <label className="block font-bold text-notion-text-muted mb-1.5 text-xs sm:text-sm">
+                    รหัส BP ลูกค้า
+                  </label>
                   <input
                     type="text"
                     value={editBpCode}
                     onChange={(e) => setEditBpCode(e.target.value)}
                     placeholder="เช่น 1043342"
-                    className="w-full px-3 py-2 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark text-cyan-600 dark:text-cyan-400"
+                    className="w-full px-3.5 py-2.5 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark text-cyan-600 dark:text-cyan-400"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1">ชื่อ-นามสกุล ลูกค้า ผู้ซื้อ *</label>
-                  <input
-                    type="text"
-                    required
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className="w-full px-3 py-2 text-base font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1">เบอร์โทรศัพท์ติดต่อ ผู้ซื้อ *</label>
+                  <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1.5 text-xs sm:text-sm">
+                    เบอร์โทรศัพท์ติดต่อ *
+                  </label>
                   <input
                     type="tel"
                     required
                     value={editPhone}
                     onChange={(e) => setEditPhone(e.target.value)}
-                    className="w-full px-3 py-2 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
+                    className="w-full px-3.5 py-2.5 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
                   />
                 </div>
               </div>
 
+              {/* Row 2: Customer Name */}
               <div>
-                <label className="block font-bold text-notion-text-muted mb-1">เลขประจำตัวประชาชน / บัตรคนต่างด้าว / พาสปอร์ต</label>
+                <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1.5 text-xs sm:text-sm">
+                  ชื่อ-นามสกุล ลูกค้า ผู้ซื้อ *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-base font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
+                />
+              </div>
+
+              {/* Row 3: ID Card / Foreigner Card Number */}
+              <div>
+                <label className="block font-bold text-notion-text-muted mb-1.5 text-xs sm:text-sm">
+                  เลขประจำตัวประชาชน / บัตรคนต่างด้าว / พาสปอร์ต
+                </label>
                 <input
                   type="text"
                   value={editIdCardNo}
                   onChange={(e) => setEditIdCardNo(e.target.value)}
                   placeholder="เช่น 1509900123456 หรือ 0001234567890"
-                  className="w-full px-3.5 py-2 text-base font-mono rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
+                  className="w-full px-3.5 py-2.5 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark text-emerald-600 dark:text-emerald-400"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-notion-text-muted mb-1">ชื่อ-นามสกุล ผู้ค้ำประกัน (Guarantor)</label>
-                  <input
-                    type="text"
-                    value={editGuarantorName}
-                    onChange={(e) => setEditGuarantorName(e.target.value)}
-                    placeholder="เช่น นายจรินทร์ เมพ่วง"
-                    className="w-full px-3.5 py-2 text-base font-semibold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-notion-text-muted mb-1">เบอร์โทรศัพท์ ผู้ค้ำประกัน</label>
-                  <input
-                    type="tel"
-                    value={editGuarantorPhone}
-                    onChange={(e) => setEditGuarantorPhone(e.target.value)}
-                    placeholder="0891234567"
-                    className="w-full px-3.5 py-2 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
-                  />
-                </div>
-              </div>
-
+              {/* Row 4: Address */}
               <div>
-                <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1">ที่อยู่ตามสำเนาทะเบียนบ้าน / ที่พักปัจจุบัน *</label>
+                <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1.5 text-xs sm:text-sm">
+                  ที่อยู่ตามสำเนาทะเบียนบ้าน / ที่พักปัจจุบัน *
+                </label>
                 <textarea
                   required
                   rows={2}
                   value={editAddress}
                   onChange={(e) => setEditAddress(e.target.value)}
-                  className="w-full px-3.5 py-2 text-base font-medium rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
+                  className="w-full px-3.5 py-2.5 text-base font-medium rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
                 />
               </div>
 
+              {/* Row 5: GPS Location Pin */}
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="font-bold text-notion-text-muted flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                  <label className="font-bold text-notion-text-muted flex items-center gap-1.5 text-xs sm:text-sm">
                     <Navigation className="w-4 h-4 text-notion-accent-blue" />
                     <span>พิกัด GPS / ลิงก์ Google Maps โลเคชั่นบ้านลูกค้า</span>
                   </label>
@@ -1012,13 +1008,26 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                   </button>
                 </div>
 
-                <input
-                  type="text"
-                  value={editLocationPin}
-                  onChange={(e) => setEditLocationPin(e.target.value)}
-                  placeholder="พิกัด GPS เช่น 18.7883, 98.9853 หรือแปะลิงก์ Google Maps..."
-                  className="w-full px-3.5 py-2 text-base font-mono rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={editLocationPin}
+                    onChange={(e) => setEditLocationPin(e.target.value)}
+                    placeholder="พิกัด GPS เช่น 18.7883, 98.9853 หรือแปะลิงก์ Google Maps..."
+                    className="flex-1 px-3.5 py-2.5 text-base font-mono rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
+                  />
+                  {editLocationPin && (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenGoogleMaps(editLocationPin)}
+                      className="px-3.5 py-2.5 bg-notion-accent-blue text-white font-bold text-xs rounded-xl flex items-center gap-1 shrink-0"
+                      title="ทดสอบเปิดใน Google Maps"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      <span>เปิดแผนที่</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
