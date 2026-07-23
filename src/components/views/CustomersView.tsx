@@ -800,18 +800,33 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1">
-                  ชื่อ-นามสกุล ลูกค้า ผู้ซื้อ *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newCustomerName}
-                  onChange={(e) => setNewCustomerName(e.target.value)}
-                  placeholder="เช่น นาย สมชาย ใจดี"
-                  className="w-full px-3.5 py-2 text-base font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1">
+                    ชื่อ-นามสกุล ลูกค้า ผู้ซื้อ *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newCustomerName}
+                    onChange={(e) => setNewCustomerName(e.target.value)}
+                    placeholder="เช่น นาย สมชาย ใจดี"
+                    className="w-full px-3.5 py-2 text-base font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1">
+                    เลขบัตรประจำตัวประชาชน / บัตรคนต่างด้าว
+                  </label>
+                  <input
+                    type="text"
+                    value={newIdCardNo}
+                    onChange={(e) => setNewIdCardNo(e.target.value)}
+                    placeholder="เช่น 1509900123456 หรือ 0001234567890"
+                    className="w-full px-3.5 py-2 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark text-emerald-600 dark:text-emerald-400"
+                  />
+                </div>
               </div>
 
               <div>
