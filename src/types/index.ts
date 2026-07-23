@@ -43,7 +43,7 @@ export interface PaymentRecord {
   paymentDate: string; // ISO format YYYY-MM-DD
   paymentTime?: string; // HH:mm format (if transfer)
   installmentNo: number;
-  paymentMethod: 'เงินสด' | 'โอนเงิน' | 'บัตรเครดิต' | 'อื่นๆ';
+  paymentMethod: 'QR' | 'บัญชี' | 'เงินสด' | 'โอนเงิน' | 'บัตรเครดิต' | 'อื่นๆ';
   note?: string;
 }
 

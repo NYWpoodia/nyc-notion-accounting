@@ -152,7 +152,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
   ];
 
   const startDate = `${startYearBE > 2500 ? startYearBE - 543 : startYearBE}-${String(startMonth).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`;
-  const [paymentMethod, setPaymentMethod] = useState<'โอนเงิน' | 'เงินสด' | 'บัตรเครดิต'>('โอนเงิน');
+  const [paymentMethod, setPaymentMethod] = useState<'QR' | 'บัญชี' | 'เงินสด' | 'โอนเงิน' | 'บัตรเครดิต'>('QR');
 
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -934,7 +934,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                         ช่องทางรับเงินดาวน์
                       </label>
                       <div className="grid grid-cols-3 gap-2">
-                        {(['โอนเงิน', 'เงินสด', 'บัตรเครดิต'] as const).map((m) => (
+                        {(['QR', 'บัญชี', 'เงินสด'] as const).map((m) => (
                           <button
                             key={m}
                             type="button"
