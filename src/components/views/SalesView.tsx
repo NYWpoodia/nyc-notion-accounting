@@ -975,7 +975,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       <NotionBadge variant="success">คำนวณงวดสุดท้ายอัตโนมัติ</NotionBadge>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
                       <div>
                         <span className="text-notion-text-muted block mb-0.5">ราคาสินค้าเต็ม:</span>
                         <p className="font-bold text-sm text-notion-text-main dark:text-notion-text-darkMain">
@@ -988,7 +988,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                         <p className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
                           {formatCurrency(parseDigitsOnly(downPayment))}
                         </p>
-                        <span className="text-[10px] text-stone-500">โอนเงินดาวน์: {startDay} {monthNames[startMonth - 1]} {startYearBE}</span>
+                        <span className="text-[10px] text-stone-500 block">โอนดาวน์: {startDay} {monthNames[startMonth - 1]} {startYearBE}</span>
                       </div>
 
                       <div>
@@ -999,10 +999,19 @@ export const SalesView: React.FC<SalesViewProps> = ({
                       </div>
 
                       <div>
+                        <span className="text-notion-text-muted block mb-0.5">กำหนดชำระค่างวด:</span>
+                        <p className="font-bold text-sm text-purple-700 dark:text-purple-300">
+                          ทุกวันที่ {dueDateDay}
+                        </p>
+                        <span className="text-[10px] text-stone-500 block">ของทุกๆ เดือน</span>
+                      </div>
+
+                      <div>
                         <span className="text-notion-text-muted block mb-0.5">งวดที่ 1 ถึง {Math.max(1, totalInstallments - 1)} ({Math.max(1, totalInstallments - 1)} งวด):</span>
                         <p className="font-bold text-sm text-notion-accent-blue">
                           {formatCurrency(parseDigitsOnly(monthlyInstallment))}<span className="text-[10px] font-normal"> / เดือน</span>
                         </p>
+                        <span className="text-[10px] text-stone-500 block">ชำระทุกวันที่ {dueDateDay}</span>
                       </div>
 
                       <div className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/30">
@@ -1016,6 +1025,7 @@ export const SalesView: React.FC<SalesViewProps> = ({
                             )
                           )}
                         </p>
+                        <span className="text-[10px] text-amber-800/80 dark:text-amber-300/80 font-semibold block">ชำระวันที่ {dueDateDay} (งวดปิด)</span>
                       </div>
                     </div>
                   </div>
