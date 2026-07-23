@@ -30,6 +30,7 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
 
   // 1. Customer Master Profile & Guarantor Edit Modal State (Opened by Eye 👁️)
   const [selectedCustomerContract, setSelectedCustomerContract] = useState<CustomerContract | null>(null);
+  const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editAddress, setEditAddress] = useState('');
@@ -39,6 +40,30 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
   const [editBpCode, setEditBpCode] = useState('');
   const [geoLocating, setGeoLocating] = useState(false);
   const [saveCustomerSuccess, setSaveCustomerSuccess] = useState<string | null>(null);
+
+  // Helper to open Google Maps link or lat,lng coordinates
+  const handleOpenGoogleMaps = (pin: string) => {
+    if (!pin) return;
+    if (pin.startsWith('http://') || pin.startsWith('https://')) {
+      window.open(pin, '_blank');
+    } else {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pin)}`, '_blank');
+    }
+  };
+
+  // Open Full Customer Details Modal (Eye Button)
+  const handleOpenCustomerModal = (c: CustomerContract) => {
+    setSelectedCustomerContract(c);
+    setIsEditingCustomer(false); // Default to read-only view mode!
+    setEditName(c.customerName || '');
+    setEditPhone(c.phone || '');
+    setEditAddress(c.address || '');
+    setEditGuarantor(c.guarantorName || '');
+    setEditGuarantorPhone(c.guarantorPhone || '');
+    setEditLocationPin(c.locationPin || '');
+    setEditBpCode(c.bpCode || '');
+    setSaveCustomerSuccess(null);
+  };
 
   // 2. Dedicated Quick Follow-up Note Modal State (Opened by clicking "ติดตาม" button)
   const [quickNoteContract, setQuickNoteContract] = useState<CustomerContract | null>(null);
@@ -116,19 +141,6 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
 
   const handlePrint = () => {
     window.print();
-  };
-
-  // Open Full Customer Details Modal (Eye Button)
-  const handleOpenCustomerModal = (c: CustomerContract) => {
-    setSelectedCustomerContract(c);
-    setEditName(c.customerName || '');
-    setEditPhone(c.phone || '');
-    setEditAddress(c.address || '');
-    setEditGuarantor(c.guarantorName || '');
-    setEditGuarantorPhone(c.guarantorPhone || '');
-    setEditLocationPin(c.locationPin || '');
-    setEditBpCode(c.bpCode || '');
-    setSaveCustomerSuccess(null);
   };
 
   // Open Dedicated Quick Follow-up Note Modal (Clicking "ติดตาม" button)
@@ -746,133 +758,232 @@ export const MonthlyReportView: React.FC<MonthlyReportViewProps> = ({
         )}
       </NotionModal>
 
-      {/* MODAL 2: Customer & Guarantor Master Data Edit Modal (Opened by Eye 👁️) */}
+      {/* MODAL 2: Customer & Guarantor Master Data View/Edit Modal (Opened by Eye 👁️) */}
       <NotionModal
         isOpen={!!selectedCustomerContract}
         onClose={() => setSelectedCustomerContract(null)}
         maxWidth="2xl"
-        title={`แก้ไขข้อมูลลูกค้า & ผู้ค้ำประกัน - สัญญา ${selectedCustomerContract?.contractNo}`}
+        title={isEditingCustomer ? `แก้ไขข้อมูลลูกค้า & ผู้ค้ำประกัน - สัญญา ${selectedCustomerContract?.contractNo}` : `รายละเอียดข้อมูลลูกค้า & ผู้ค้ำประกัน - สัญญา ${selectedCustomerContract?.contractNo}`}
         subtitle={`ลูกค้า: ${selectedCustomerContract?.customerName}`}
-        icon={<Eye className="w-6 h-6 text-notion-accent-blue" />}
+        icon={isEditingCustomer ? <Edit2 className="w-6 h-6 text-amber-500" /> : <Eye className="w-6 h-6 text-notion-accent-blue" />}
       >
         {selectedCustomerContract && (
-          <form onSubmit={handleSaveCustomerDetails} className="space-y-4 text-sm sm:text-base">
-            {saveCustomerSuccess && (
-              <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                <span>{saveCustomerSuccess}</span>
+          !isEditingCustomer ? (
+            /* 1. READ-ONLY VIEW MODE (ไม่สามารถแก้ไขข้อมูลได้) */
+            <div className="space-y-4 text-sm sm:text-base">
+              <div className="p-4 rounded-2xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark space-y-4">
+                {/* Header Row: BP Code & ID Card */}
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-notion-border-light dark:border-notion-border-dark pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-notion-text-muted font-semibold">รหัส BP ลูกค้า:</span>
+                    <span className="px-2.5 py-0.5 font-mono font-bold text-cyan-700 dark:text-cyan-400 bg-cyan-500/15 rounded-lg text-sm">
+                      {editBpCode || '-'}
+                    </span>
+                  </div>
+                  {selectedCustomerContract.idCardNo && (
+                    <div className="text-xs font-mono font-medium text-notion-text-muted">
+                      🪪 เลขบัตรประชาชน: <strong className="text-notion-text-main dark:text-notion-text-darkMain">{selectedCustomerContract.idCardNo}</strong>
+                    </div>
+                  )}
+                </div>
+
+                {/* Customer Name & Phone */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-xs font-bold text-notion-text-muted block mb-0.5">👤 ชื่อ-นามสกุล ลูกค้า (ผู้ซื้อ):</span>
+                    <p className="font-bold text-base text-notion-text-main dark:text-notion-text-darkMain">{editName || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-notion-text-muted block mb-0.5">📱 เบอร์โทรศัพท์ติดต่อ:</span>
+                    <p className="font-mono font-bold text-base text-notion-text-main dark:text-notion-text-darkMain">{editPhone || '-'}</p>
+                  </div>
+                </div>
+
+                {/* Guarantor Info Box */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                  <div>
+                    <span className="text-xs font-bold text-purple-800 dark:text-purple-300 block mb-0.5">🛡️ ผู้ค้ำประกัน (Guarantor):</span>
+                    <p className="font-bold text-sm text-purple-900 dark:text-purple-200">{editGuarantor || 'ไม่มีข้อมูลผู้ค้ำประกัน'}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-purple-800 dark:text-purple-300 block mb-0.5">📞 เบอร์โทรผู้ค้ำประกัน:</span>
+                    <p className="font-mono font-bold text-sm text-purple-900 dark:text-purple-200">{editGuarantorPhone || '-'}</p>
+                  </div>
+                </div>
+
+                {/* Address */}
+                <div>
+                  <span className="text-xs font-bold text-notion-text-muted block mb-0.5">🏠 ที่อยู่ตามสัญญา / ที่พักปัจจุบัน:</span>
+                  <p className="font-medium text-sm text-notion-text-main dark:text-notion-text-darkMain leading-relaxed">{editAddress || '-'}</p>
+                </div>
+
+                {/* GPS Location Pin */}
+                <div>
+                  <span className="text-xs font-bold text-notion-text-muted block mb-1">📍 พิกัด GPS / ลิงก์ Google Maps:</span>
+                  {editLocationPin ? (
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm font-semibold text-notion-accent-blue">{editLocationPin}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenGoogleMaps(editLocationPin)}
+                        className="px-2.5 py-1 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/25 font-bold text-xs rounded-xl transition-colors inline-flex items-center gap-1"
+                      >
+                        <Navigation className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>เปิด Google Maps</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-stone-400 italic">- ยังไม่มีข้อมูลพิกัด GPS</span>
+                  )}
+                </div>
+
+                {/* Contract Summary */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-3 border-t border-notion-border-light dark:border-notion-border-dark text-xs">
+                  <div>
+                    <span className="text-notion-text-muted block mb-0.5">🛒 สินค้าที่ผ่อน:</span>
+                    <p className="font-bold text-notion-text-main dark:text-notion-text-darkMain">{selectedCustomerContract.productName}</p>
+                  </div>
+                  <div>
+                    <span className="text-notion-text-muted block mb-0.5">ค่างวดต่อเดือน:</span>
+                    <p className="font-bold text-notion-accent-blue">{formatCurrency(selectedCustomerContract.monthlyInstallment)}</p>
+                  </div>
+                  <div>
+                    <span className="text-notion-text-muted block mb-0.5">ยอดคงเหลือรวม:</span>
+                    <p className="font-bold text-rose-600 dark:text-rose-400">{formatCurrency(selectedCustomerContract.remainingBalance)}</p>
+                  </div>
+                </div>
               </div>
-            )}
 
-            {/* Editable Customer & Guarantor Personal Info */}
-            <div className="p-4 rounded-2xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block font-bold text-notion-text-muted mb-1">รหัส BP ลูกค้า</label>
-                  <input
-                    type="text"
-                    value={editBpCode}
-                    onChange={(e) => setEditBpCode(e.target.value)}
-                    placeholder="เช่น BP-6907-0015"
-                    className="w-full px-3 py-2 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark text-cyan-600 dark:text-cyan-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1">ชื่อ-นามสกุล ลูกค้า *</label>
-                  <input
-                    type="text"
-                    required
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className="w-full px-3 py-2 text-base font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1">เบอร์โทรศัพท์ติดต่อ *</label>
-                  <input
-                    type="tel"
-                    required
-                    value={editPhone}
-                    onChange={(e) => setEditPhone(e.target.value)}
-                    className="w-full px-3 py-2 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-notion-text-muted mb-1">ชื่อ-นามสกุล ผู้ค้ำประกัน (Guarantor)</label>
-                  <input
-                    type="text"
-                    value={editGuarantor}
-                    onChange={(e) => setEditGuarantor(e.target.value)}
-                    placeholder="เช่น นายจรินทร์ เมพ่วง"
-                    className="w-full px-3.5 py-2 text-base font-semibold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-notion-text-muted mb-1">เบอร์โทรศัพท์ ผู้ค้ำประกัน</label>
-                  <input
-                    type="tel"
-                    value={editGuarantorPhone}
-                    onChange={(e) => setEditGuarantorPhone(e.target.value)}
-                    placeholder="0891234567"
-                    className="w-full px-3.5 py-2 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1">ที่อยู่ตามสำเนาทะเบียนบ้าน / ที่พักปัจจุบัน *</label>
-                <textarea
-                  required
-                  rows={2}
-                  value={editAddress}
-                  onChange={(e) => setEditAddress(e.target.value)}
-                  className="w-full px-3.5 py-2 text-base font-medium rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
-                />
-              </div>
-
-              {/* GPS Location Pin Input & Button */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="font-bold text-notion-text-muted flex items-center gap-1.5">
-                    <Navigation className="w-4 h-4 text-notion-accent-blue" />
-                    <span>พิกัด GPS / ลิงก์ Google Maps โลเคชั่นบ้านลูกค้า</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleGetCurrentLocation}
-                    disabled={geoLocating}
-                    className="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-notion-sm transition-colors flex items-center gap-1"
-                  >
-                    <Navigation className="w-3.5 h-3.5" />
-                    <span>{geoLocating ? 'กำลังดึงพิกัด...' : '📍 ดึงพิกัด GPS ปัจจุบัน'}</span>
-                  </button>
-                </div>
-
-                <input
-                  type="text"
-                  value={editLocationPin}
-                  onChange={(e) => setEditLocationPin(e.target.value)}
-                  placeholder="พิกัด GPS เช่น 18.7883, 98.9853 หรือแปะลิงก์ Google Maps..."
-                  className="w-full px-3.5 py-2 text-base font-mono rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
-                />
+              {/* Action Buttons for Read-Only Mode */}
+              <div className="flex items-center justify-between pt-2">
+                <NotionButton type="button" variant="secondary" onClick={() => setSelectedCustomerContract(null)}>
+                  ปิดหน้าต่าง
+                </NotionButton>
+                <NotionButton type="button" variant="primary" icon={<Edit2 className="w-4 h-4" />} onClick={() => setIsEditingCustomer(true)}>
+                  แก้ไขข้อมูล
+                </NotionButton>
               </div>
             </div>
+          ) : (
+            /* 2. EDITABLE FORM MODE (โหมดแก้ไขข้อมูล) */
+            <form onSubmit={handleSaveCustomerDetails} className="space-y-4 text-sm sm:text-base">
+              {saveCustomerSuccess && (
+                <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                  <span>{saveCustomerSuccess}</span>
+                </div>
+              )}
 
-            <div className="flex justify-end gap-3 pt-2">
-              <NotionButton type="button" variant="secondary" onClick={() => setSelectedCustomerContract(null)}>
-                ยกเลิก
-              </NotionButton>
-              <NotionButton type="submit" variant="primary" icon={<Save className="w-4 h-4" />}>
-                บันทึกการเปลี่ยนแปลงข้อมูลลูกค้า
-              </NotionButton>
-            </div>
-          </form>
+              {/* Editable Customer & Guarantor Personal Info */}
+              <div className="p-4 rounded-2xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-bold text-notion-text-muted mb-1">รหัส BP ลูกค้า</label>
+                    <input
+                      type="text"
+                      value={editBpCode}
+                      onChange={(e) => setEditBpCode(e.target.value)}
+                      placeholder="เช่น BP-6907-0015"
+                      className="w-full px-3 py-2 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark text-cyan-600 dark:text-cyan-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1">ชื่อ-นามสกุล ลูกค้า *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="w-full px-3 py-2 text-base font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1">เบอร์โทรศัพท์ติดต่อ *</label>
+                    <input
+                      type="tel"
+                      required
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      className="w-full px-3 py-2 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-notion-text-muted mb-1">ชื่อ-นามสกุล ผู้ค้ำประกัน (Guarantor)</label>
+                    <input
+                      type="text"
+                      value={editGuarantor}
+                      onChange={(e) => setEditGuarantor(e.target.value)}
+                      placeholder="เช่น นายจรินทร์ เมพ่วง"
+                      className="w-full px-3.5 py-2 text-base font-semibold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-notion-text-muted mb-1">เบอร์โทรศัพท์ ผู้ค้ำประกัน</label>
+                    <input
+                      type="tel"
+                      value={editGuarantorPhone}
+                      onChange={(e) => setEditGuarantorPhone(e.target.value)}
+                      placeholder="0891234567"
+                      className="w-full px-3.5 py-2 text-base font-mono font-bold rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-notion-text-main dark:text-notion-text-darkMain mb-1">ที่อยู่ตามสำเนาทะเบียนบ้าน / ที่พักปัจจุบัน *</label>
+                  <textarea
+                    required
+                    rows={2}
+                    value={editAddress}
+                    onChange={(e) => setEditAddress(e.target.value)}
+                    className="w-full px-3.5 py-2 text-base font-medium rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
+                  />
+                </div>
+
+                {/* GPS Location Pin Input & Button */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-notion-text-muted flex items-center gap-1.5">
+                      <Navigation className="w-4 h-4 text-notion-accent-blue" />
+                      <span>พิกัด GPS / ลิงก์ Google Maps โลเคชั่นบ้านลูกค้า</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleGetCurrentLocation}
+                      disabled={geoLocating}
+                      className="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-notion-sm transition-colors flex items-center gap-1"
+                    >
+                      <Navigation className="w-3.5 h-3.5" />
+                      <span>{geoLocating ? 'กำลังดึงพิกัด...' : '📍 ดึงพิกัด GPS ปัจจุบัน'}</span>
+                    </button>
+                  </div>
+
+                  <input
+                    type="text"
+                    value={editLocationPin}
+                    onChange={(e) => setEditLocationPin(e.target.value)}
+                    placeholder="พิกัด GPS เช่น 18.7883, 98.9853 หรือแปะลิงก์ Google Maps..."
+                    className="w-full px-3.5 py-2 text-base font-mono rounded-xl bg-notion-card-light dark:bg-notion-card-dark border border-notion-border-light dark:border-notion-border-dark"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <NotionButton type="button" variant="secondary" onClick={() => setIsEditingCustomer(false)}>
+                  ยกเลิกการแก้ไข
+                </NotionButton>
+                <NotionButton type="submit" variant="primary" icon={<Save className="w-4 h-4" />}>
+                  บันทึกการเปลี่ยนแปลงข้อมูลลูกค้า
+                </NotionButton>
+              </div>
+            </form>
+          )
         )}
       </NotionModal>
     </div>
