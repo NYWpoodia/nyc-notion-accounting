@@ -195,17 +195,30 @@ export function parseSingleCustomerSheet(
   const totalPrice = rawFinancedNum + downPayment;
 
   // Status mapping D0 - D6 & ปิดสัญญาแล้ว
+  // Count ONLY installments whose due date has ALREADY PASSED and are NOT paid
   let status: ContractStatus = 'D0 ชำระปกติ';
   if (remainingBalance === 0 && totalInstallments > 0 && paidInstallments >= totalInstallments) {
     status = 'ปิดสัญญาแล้ว';
-  } else if (remainingBalance > 0) {
-    const overdueMonths = Math.min(6, Math.max(1, totalInstallments - paidInstallments));
-    if (overdueMonths === 1) status = 'D1 ค้างชำระ 1 เดือน';
-    else if (overdueMonths === 2) status = 'D2 ค้างชำระ 2 เดือน';
-    else if (overdueMonths === 3) status = 'D3 ค้างชำระ 3 เดือน';
-    else if (overdueMonths === 4) status = 'D4 ค้างชำระ 4 เดือน';
-    else if (overdueMonths === 5) status = 'D5 ค้างชำระ 5 เดือน';
-    else if (overdueMonths >= 6) status = 'D6 ค้างชำระ 6 เดือน';
+  } else {
+    const todayIso = new Date().toISOString().split('T')[0];
+    let overdueCount = 0;
+
+    if (schedule.length > 0) {
+      // Use exact schedule dates from Excel
+      overdueCount = schedule.filter((s) => !s.isPaid && s.dueDate && s.dueDate < todayIso).length;
+    } else {
+      // Fallback: count based on paidInstallments vs expected paid by now
+      overdueCount = Math.max(0, paidInstallments - totalInstallments);
+    }
+
+    const capped = Math.min(6, overdueCount);
+    if (capped === 0) status = 'D0 ชำระปกติ';
+    else if (capped === 1) status = 'D1 ค้างชำระ 1 เดือน';
+    else if (capped === 2) status = 'D2 ค้างชำระ 2 เดือน';
+    else if (capped === 3) status = 'D3 ค้างชำระ 3 เดือน';
+    else if (capped === 4) status = 'D4 ค้างชำระ 4 เดือน';
+    else if (capped === 5) status = 'D5 ค้างชำระ 5 เดือน';
+    else status = 'D6 ค้างชำระ 6 เดือน';
   }
 
   return {
