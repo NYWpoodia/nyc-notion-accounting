@@ -74,14 +74,7 @@ export function App() {
   ).length;
 
   const handleOpenQuickPay = (contractNo?: string) => {
-    if (contractNo) {
-      setSelectedPayContractNo(contractNo);
-    } else if (contracts.length > 0) {
-      const firstOverdue = contracts.find((c) => c.remainingBalance > 0);
-      if (firstOverdue) {
-        setSelectedPayContractNo(firstOverdue.contractNo);
-      }
-    }
+    setSelectedPayContractNo(contractNo || '');
     setIsQuickPayOpen(true);
   };
 

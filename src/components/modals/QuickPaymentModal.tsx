@@ -375,16 +375,17 @@ export const QuickPaymentModal: React.FC<QuickPaymentModalProps> = ({
           <label className="block font-bold text-notion-text-muted mb-1.5">
             💳 ช่องทางการชำระเงิน
           </label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {[
               { id: 'โอนเงิน', label: '📱 โอนเงิน (QR บัญชี)' },
               { id: 'เงินสด', label: '💵 เงินสด' },
+              { id: 'บัตรเครดิต', label: '💳 บัตรเครดิต' },
             ].map((m) => (
               <button
                 key={m.id}
                 type="button"
                 onClick={() => setPaymentMethod(m.id as any)}
-                className={`py-2.5 rounded-2xl font-bold border text-base transition-all ${
+                className={`py-2.5 rounded-2xl font-bold border text-xs sm:text-base transition-all ${
                   paymentMethod === m.id
                     ? 'bg-notion-accent-blue text-white border-notion-accent-blue shadow-md'
                     : 'bg-notion-sidebar-light dark:bg-notion-sidebar-dark border-notion-border-light text-notion-text-muted'
