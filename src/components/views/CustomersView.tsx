@@ -38,6 +38,7 @@ interface CustomersViewProps {
   onDeleteCustomerProfile?: (id: string) => void;
   onDeleteContract?: (contractNo: string) => void;
   onCleanDuplicates?: () => void;
+  onWipeDatabase?: () => void;
 }
 
 export const CustomersView: React.FC<CustomersViewProps> = ({
@@ -49,6 +50,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   onDeleteCustomerProfile,
   onDeleteContract,
   onCleanDuplicates,
+  onWipeDatabase,
 }) => {
   // Navigation Tab State
   const [activeTab, setActiveTab] = useState<'profiles' | 'contracts'>('profiles');
@@ -304,11 +306,22 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {onCleanDuplicates && (
+          {onWipeDatabase && (
             <NotionButton
               type="button"
               variant="secondary"
               icon={<Trash2 className="w-4 h-4 text-rose-500" />}
+              onClick={onWipeDatabase}
+              className="bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 border-rose-500/20"
+            >
+              🗑️ ล้างข้อมูล DB ทั้งหมด
+            </NotionButton>
+          )}
+          {onCleanDuplicates && (
+            <NotionButton
+              type="button"
+              variant="secondary"
+              icon={<Layers className="w-4 h-4 text-amber-500" />}
               onClick={onCleanDuplicates}
             >
               🧹 ล้างข้อมูลสัญญาซ้ำ

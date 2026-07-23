@@ -42,6 +42,7 @@ import {
   seedContractsToSupabase,
   seedProfilesToSupabase,
   seedLedgerToSupabase,
+  clearAllSupabaseDatabase,
 } from './services/dbService';
 
 export function App() {
@@ -161,6 +162,19 @@ export function App() {
     saveStoredContracts(cleaned);
     seedContractsToSupabase(cleaned);
     alert(`🧹 ลบสัญญาซ้ำซ้อนเรียบร้อยแล้ว! คงเหลือ ${cleaned.length} สัญญาที่ไม่ซ้ำ`);
+  };
+
+  const handleWipeAllDatabase = async () => {
+    const confirmWipe = window.confirm(
+      '⚠️ คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลในฐานข้อมูล (Supabase DB) ทั้งหมด?\n\nข้อมูลสัญญาและลูกค้าตัวอย่างเดิมทั้งหมดจะถูกลบทิ้ง เพื่อเตรียมการนำเข้าไฟล์ Excel ชุดใหม่ของคุณ'
+    );
+    if (!confirmWipe) return;
+
+    await clearAllSupabaseDatabase();
+    setContracts([]);
+    setCustomerProfiles([]);
+    setLedger([]);
+    alert('🗑️ ล้างข้อมูลในฐานข้อมูลทั้งหมดเรียบร้อยแล้ว! หน้าจอสะอาดพร้อมนำเข้าไฟล์ Excel ใหม่แล้วครับ');
   };
 
   const handleImportContracts = (importedContracts: CustomerContract[]) => {
@@ -285,6 +299,7 @@ export function App() {
               onDeleteCustomerProfile={handleDeleteCustomerProfile}
               onDeleteContract={handleDeleteContract}
               onCleanDuplicates={handleCleanDuplicates}
+              onWipeDatabase={handleWipeAllDatabase}
             />
           )}
 
@@ -315,7 +330,10 @@ export function App() {
           )}
 
           {currentView === 'import' && (
-            <ExcelImportView onImportContracts={handleImportContracts} />
+            <ExcelImportView
+              onImportContracts={handleImportContracts}
+              onWipeDatabase={handleWipeAllDatabase}
+            />
           )}
         </main>
       </div>

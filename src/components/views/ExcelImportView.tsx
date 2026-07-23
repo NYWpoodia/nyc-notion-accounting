@@ -7,11 +7,14 @@ import { parseExcelFile } from '../../services/excelParser';
 import { formatCurrency, getContractStatusStyle } from '../../services/formatters';
 import { FileSpreadsheet, Upload, Folder, CheckCircle, RefreshCw, Layers } from 'lucide-react';
 
+import { Trash2 } from 'lucide-react';
+
 interface ExcelImportViewProps {
   onImportContracts: (contracts: CustomerContract[]) => void;
+  onWipeDatabase?: () => void;
 }
 
-export const ExcelImportView: React.FC<ExcelImportViewProps> = ({ onImportContracts }) => {
+export const ExcelImportView: React.FC<ExcelImportViewProps> = ({ onImportContracts, onWipeDatabase }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [parsedPreview, setParsedPreview] = useState<CustomerContract[]>([]);
   const [activeFileName, setActiveFileName] = useState<string | null>(null);
@@ -83,19 +86,33 @@ export const ExcelImportView: React.FC<ExcelImportViewProps> = ({ onImportContra
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="bg-notion-sidebar-light dark:bg-notion-sidebar-dark p-5 rounded-2xl border border-notion-border-light dark:border-notion-border-dark flex items-start gap-4">
-        <div className="p-3 rounded-xl bg-notion-accent-purple/15 text-notion-accent-purple shrink-0">
-          <FileSpreadsheet className="w-6 h-6" />
+      <div className="bg-notion-sidebar-light dark:bg-notion-sidebar-dark p-5 rounded-2xl border border-notion-border-light dark:border-notion-border-dark flex items-center justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <div className="p-3 rounded-xl bg-notion-accent-purple/15 text-notion-accent-purple shrink-0">
+            <FileSpreadsheet className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-notion-text-main dark:text-notion-text-darkMain">
+              ระบบนำเข้าข้อมูลสัญญาจากไฟล์ Excel (/Data/Customers/*.xlsx)
+            </h2>
+            <p className="text-xs text-notion-text-muted dark:text-notion-text-darkMuted mt-1 leading-relaxed">
+              ระบบรองรับการอ่านไฟล์ Multi-sheet ในแต่ละไฟล์ `.xlsx` โดยถือว่า 1 Sheet = 1 รหัสสัญญาของลูกค้า
+              และวิเคราะห์สถานะค้างชำระในรูปแบบ D0 ถึง D6 อัตโนมัติ
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-base font-bold text-notion-text-main dark:text-notion-text-darkMain">
-            ระบบนำเข้าข้อมูลสัญญาจากไฟล์ Excel (/Data/Customers/*.xlsx)
-          </h2>
-          <p className="text-xs text-notion-text-muted dark:text-notion-text-darkMuted mt-1 leading-relaxed">
-            ระบบรองรับการอ่านไฟล์ Multi-sheet ในแต่ละไฟล์ `.xlsx` โดยถือว่า 1 Sheet = 1 รหัสสัญญาของลูกค้า
-            และวิเคราะห์สถานะค้างชำระในรูปแบบ D0 ถึง D6 อัตโนมัติ
-          </p>
-        </div>
+
+        {onWipeDatabase && (
+          <NotionButton
+            type="button"
+            variant="secondary"
+            icon={<Trash2 className="w-4 h-4 text-rose-500" />}
+            onClick={onWipeDatabase}
+            className="shrink-0 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 border-rose-500/20"
+          >
+            🗑️ ล้างข้อมูล DB ทั้งหมด
+          </NotionButton>
+        )}
       </div>
 
       <NotionCard title="ไฟล์ Excel ในโฟลเดอร์ /Data/Customers/" subtitle="คลิกเพื่ออ่านข้อมูลสัญญาภายในไฟล์" icon={<Folder className="w-4 h-4 text-notion-accent-blue" />}>

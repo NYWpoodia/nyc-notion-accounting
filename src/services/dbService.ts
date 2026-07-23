@@ -276,3 +276,19 @@ export async function seedLedgerToSupabase(ledger: LedgerItem[]): Promise<void> 
     console.error('Failed seeding ledger to Supabase:', err);
   }
 }
+
+export async function clearAllSupabaseDatabase(): Promise<void> {
+  try {
+    await Promise.all([
+      supabase.from(TABLES.CONTRACTS).delete().neq('id', '___none___'),
+      supabase.from(TABLES.PROFILES).delete().neq('id', '___none___'),
+      supabase.from(TABLES.LEDGER).delete().neq('id', '___none___'),
+    ]);
+    localStorage.removeItem('nyc_customer_contracts_v12');
+    localStorage.removeItem('nyc_customer_profiles_v12');
+    localStorage.removeItem('nyc_daily_ledger_v12');
+    console.log('Successfully wiped all DB tables in Supabase!');
+  } catch (err) {
+    console.error('Failed to clear Supabase DB:', err);
+  }
+}
