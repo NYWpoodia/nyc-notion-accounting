@@ -26,6 +26,7 @@ import {
   AlertTriangle,
   User,
   Layers,
+  Users,
 } from 'lucide-react';
 import { ContractStatementModal } from '../modals/ContractStatementModal';
 
