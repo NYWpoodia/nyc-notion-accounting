@@ -30,6 +30,7 @@ import { MonthlyReportView } from './components/views/MonthlyReportView';
 import { LedgerView } from './components/views/LedgerView';
 import { ExcelImportView } from './components/views/ExcelImportView';
 import { QuickPaymentModal } from './components/modals/QuickPaymentModal';
+import { NotionModal } from './components/ui/NotionModal';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { Search } from 'lucide-react';
 
