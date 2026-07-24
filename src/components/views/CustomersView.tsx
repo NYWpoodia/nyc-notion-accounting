@@ -26,8 +26,8 @@ import {
   AlertTriangle,
   User,
   Layers,
-  Users,
 } from 'lucide-react';
+import { ContractStatementModal } from '../modals/ContractStatementModal';
 
 interface CustomersViewProps {
   customerProfiles: CustomerProfile[];
@@ -1247,72 +1247,19 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
         )}
       </NotionModal>
 
-      {/* VIEW SINGLE CONTRACT DETAILS MODAL */}
-      <NotionModal
+      {/* VIEW CONTRACT DETAILS A4 STATEMENT MODAL */}
+      <ContractStatementModal
         isOpen={!!selectedContract}
         onClose={() => setSelectedContract(null)}
-        maxWidth="3xl"
-        title={`รายละเอียดสัญญา - ${selectedContract?.contractNo}`}
-        subtitle={`ผู้ซื้อ: ${selectedContract?.customerName} (รหัส BP: ${selectedContract?.bpCode || '-'})`}
-        icon={<FileText className="w-6 h-6 text-notion-accent-blue" />}
-      >
-        {selectedContract && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-notion-sidebar-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark">
-              <div>
-                <span className="text-xs text-notion-text-muted">ชื่อ-นามสกุล ผู้ซื้อ:</span>
-                <p className="font-bold text-base text-notion-text-main dark:text-notion-text-darkMain">{selectedContract.customerName}</p>
-              </div>
-              <div>
-                <span className="text-xs text-notion-text-muted">เลขที่สัญญา:</span>
-                <p className="font-mono font-bold text-notion-accent-blue text-base">{selectedContract.contractNo}</p>
-              </div>
-              <div>
-                <span className="text-xs text-notion-text-muted">เบอร์โทรศัพท์:</span>
-                <p className="font-mono font-semibold">{selectedContract.phone}</p>
-              </div>
-              <div>
-                <span className="text-xs text-notion-text-muted">สินค้าที่ผ่อน:</span>
-                <p className="font-bold text-emerald-700 dark:text-emerald-300">{selectedContract.productName}</p>
-              </div>
-              <div>
-                <span className="text-xs text-notion-text-muted">ราคาสินค้ารวม:</span>
-                <p className="font-bold">{formatCurrency(selectedContract.totalPrice)}</p>
-              </div>
-              <div>
-                <span className="text-xs text-notion-text-muted">ค่างวดต่อเดือน:</span>
-                <p className="font-bold text-rose-600">{formatCurrency(selectedContract.monthlyInstallment)}</p>
-              </div>
-              <div>
-                <span className="text-xs text-notion-text-muted">จำนวนงวดที่ผ่อนแล้ว:</span>
-                <p className="font-semibold">{selectedContract.paidInstallments} / {selectedContract.totalInstallments} งวด</p>
-              </div>
-              <div>
-                <span className="text-xs text-notion-text-muted">ยอดหนี้คงเหลือ:</span>
-                <p className="font-bold text-rose-600 text-base">{formatCurrency(selectedContract.remainingBalance)}</p>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-notion-border-light dark:border-notion-border-dark">
-              <NotionButton variant="secondary" onClick={() => setSelectedContract(null)}>
-                ปิดหน้าต่าง
-              </NotionButton>
-              {selectedContract.remainingBalance > 0 && (
-                <NotionButton
-                  variant="primary"
-                  onClick={() => {
-                    const cNo = selectedContract.contractNo;
-                    setSelectedContract(null);
-                    onQuickPay(cNo);
-                  }}
-                >
-                  รับชำระเงินงวดนี้
-                </NotionButton>
-              )}
-            </div>
-          </div>
-        )}
-      </NotionModal>
+        contract={selectedContract}
+        onQuickPay={onQuickPay}
+        onSaveContract={(updated) => {
+          setSelectedContract(updated);
+          if (onUpdateContract) {
+            onUpdateContract(updated.contractNo, updated);
+          }
+        }}
+      />
 
       {/* ===== DELETE CUSTOMER PROFILE CONFIRMATION MODAL ===== */}
       <NotionModal
