@@ -40,7 +40,8 @@ function mapContractToRow(c: CustomerContract) {
     start_date: c.startDate,
     status: c.status,
     payments: c.payments || [],
-    schedule: c.schedule || [],
+    // NOTE: 'schedule' is NOT stored in Supabase (column may not exist).
+    // Status is computed at import time and stored in 'status' field instead.
     updated_at: new Date().toISOString(),
   };
 }
@@ -244,7 +245,10 @@ export async function seedContractsToSupabase(contracts: CustomerContract[]): Pr
     const chunkSize = 50;
     for (let i = 0; i < rows.length; i += chunkSize) {
       const chunk = rows.slice(i, i + chunkSize);
-      await supabase.from(TABLES.CONTRACTS).upsert(chunk);
+      const { error } = await supabase.from(TABLES.CONTRACTS).upsert(chunk);
+      if (error) {
+        console.error(`Supabase upsert error (chunk ${i}):`, error.message);
+      }
     }
     console.log(`Successfully seeded ${contracts.length} contracts to Supabase Cloud DB!`);
   } catch (err) {
