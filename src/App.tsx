@@ -30,7 +30,7 @@ import { MonthlyReportView } from './components/views/MonthlyReportView';
 import { LedgerView } from './components/views/LedgerView';
 import { ExcelImportView } from './components/views/ExcelImportView';
 import { QuickPaymentModal } from './components/modals/QuickPaymentModal';
-import { NotionModal } from './components/ui/NotionModal';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { Search } from 'lucide-react';
 
 import {
@@ -289,81 +289,83 @@ export function App() {
 
         {/* Full-width responsive main workspace container (max-w-full) */}
         <main className="p-3 sm:p-6 w-full max-w-full flex-1 min-w-0">
-          {currentView === 'dashboard' && (
-            <DashboardView
-              contracts={contracts}
-              ledger={ledger}
-              onNavigate={setCurrentView}
-              onQuickPay={(contractNo) => handleOpenQuickPay(contractNo)}
-            />
-          )}
+          <ErrorBoundary key={currentView}>
+            {currentView === 'dashboard' && (
+              <DashboardView
+                contracts={contracts}
+                ledger={ledger}
+                onNavigate={setCurrentView}
+                onQuickPay={(contractNo) => handleOpenQuickPay(contractNo)}
+              />
+            )}
 
-          {currentView === 'sales' && (
-            <SalesView
-              existingContracts={contracts}
-              customerProfiles={customerProfiles}
-              onAddContract={handleAddNewContract}
-              onAddLedgerIncome={(amount, category, description, refContractNo, refCustomerName) => {
-                handleAddLedgerItem({
-                  date: getTodayIsoDate(),
-                  type: 'income',
-                  category,
-                  amount,
-                  description,
-                  refContractNo,
-                  refCustomerName,
-                });
-              }}
-            />
-          )}
+            {currentView === 'sales' && (
+              <SalesView
+                existingContracts={contracts}
+                customerProfiles={customerProfiles}
+                onAddContract={handleAddNewContract}
+                onAddLedgerIncome={(amount, category, description, refContractNo, refCustomerName) => {
+                  handleAddLedgerItem({
+                    date: getTodayIsoDate(),
+                    type: 'income',
+                    category,
+                    amount,
+                    description,
+                    refContractNo,
+                    refCustomerName,
+                  });
+                }}
+              />
+            )}
 
-          {currentView === 'customers' && (
-            <CustomersView
-              customerProfiles={customerProfiles}
-              contracts={contracts}
-              onQuickPay={(contractNo) => handleOpenQuickPay(contractNo)}
-              onAddCustomerProfile={handleAddCustomerProfile}
-              onUpdateCustomerProfile={handleUpdateCustomerProfile}
-              onDeleteCustomerProfile={handleDeleteCustomerProfile}
-              onDeleteContract={handleDeleteContract}
-              onUpdateContract={handleUpdateContractCustomerDetails}
-              onCleanDuplicates={handleCleanDuplicates}
-              onWipeDatabase={handleWipeAllDatabase}
-            />
-          )}
+            {currentView === 'customers' && (
+              <CustomersView
+                customerProfiles={customerProfiles}
+                contracts={contracts}
+                onQuickPay={(contractNo) => handleOpenQuickPay(contractNo)}
+                onAddCustomerProfile={handleAddCustomerProfile}
+                onUpdateCustomerProfile={handleUpdateCustomerProfile}
+                onDeleteCustomerProfile={handleDeleteCustomerProfile}
+                onDeleteContract={handleDeleteContract}
+                onUpdateContract={handleUpdateContractCustomerDetails}
+                onCleanDuplicates={handleCleanDuplicates}
+                onWipeDatabase={handleWipeAllDatabase}
+              />
+            )}
 
-          {currentView === 'debtors' && (
-            <DebtorsView
-              contracts={contracts}
-              onQuickPay={(contractNo) => handleOpenQuickPay(contractNo)}
-              onUpdateContractCustomer={handleUpdateContractCustomerDetails}
-            />
-          )}
+            {currentView === 'debtors' && (
+              <DebtorsView
+                contracts={contracts}
+                onQuickPay={(contractNo) => handleOpenQuickPay(contractNo)}
+                onUpdateContractCustomer={handleUpdateContractCustomerDetails}
+              />
+            )}
 
-          {currentView === 'monthly-report' && (
-            <MonthlyReportView
-              contracts={contracts}
-              onQuickPay={(contractNo) => handleOpenQuickPay(contractNo)}
-              onAddNote={handleAddFollowUpNote}
-              onUpdateContractCustomer={handleUpdateContractCustomerDetails}
-            />
-          )}
+            {currentView === 'monthly-report' && (
+              <MonthlyReportView
+                contracts={contracts}
+                onQuickPay={(contractNo) => handleOpenQuickPay(contractNo)}
+                onAddNote={handleAddFollowUpNote}
+                onUpdateContractCustomer={handleUpdateContractCustomerDetails}
+              />
+            )}
 
-          {currentView === 'ledger' && (
-            <LedgerView
-              ledger={ledger}
-              onAddTransaction={handleAddLedgerItem}
-              onUpdateTransaction={handleUpdateLedgerItem}
-              onDeleteTransaction={handleDeleteLedgerItem}
-            />
-          )}
+            {currentView === 'ledger' && (
+              <LedgerView
+                ledger={ledger}
+                onAddTransaction={handleAddLedgerItem}
+                onUpdateTransaction={handleUpdateLedgerItem}
+                onDeleteTransaction={handleDeleteLedgerItem}
+              />
+            )}
 
-          {currentView === 'import' && (
-            <ExcelImportView
-              onImportContracts={handleImportContracts}
-              onWipeDatabase={handleWipeAllDatabase}
-            />
-          )}
+            {currentView === 'import' && (
+              <ExcelImportView
+                onImportContracts={handleImportContracts}
+                onWipeDatabase={handleWipeAllDatabase}
+              />
+            )}
+          </ErrorBoundary>
         </main>
       </div>
 
