@@ -262,7 +262,7 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
                   </NotionBadge>
                 </div>
                 <div className="text-[11px] font-mono text-notion-text-muted">
-                  วันที่ทำสัญญา: <strong>{startD} {monthNames[startM - 1]} พ.ศ. {startYearBE}</strong>
+                  วันที่ทำสัญญา: <strong>{startD} {monthNames[Math.max(0, Math.min(11, startM - 1))]} พ.ศ. {startYearBE}</strong>
                 </div>
               </div>
             </div>
@@ -421,7 +421,7 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
                     {/* Row 0: Down Payment (Always rendered for every contract) */}
                     <tr className="bg-emerald-500/5">
                       <td className="px-3 py-2 text-center font-bold text-emerald-700 dark:text-emerald-400">เงินดาวน์</td>
-                      <td className="px-3 py-2 text-stone-600 dark:text-stone-300 font-semibold">วันทำสัญญา ({startD} {monthNames[startM - 1]} {startYearBE})</td>
+                      <td className="px-3 py-2 text-stone-600 dark:text-stone-300 font-semibold">วันทำสัญญา ({startD} {monthNames[Math.max(0, Math.min(11, startM - 1))]} {startYearBE})</td>
                       <td className="px-3 py-2 text-right font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(downNum)}</td>
                       <td className="px-3 py-2 text-center">
                         <span className="inline-flex items-center gap-1 font-bold text-[11px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-lg">
@@ -429,8 +429,8 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
                           ชำระดาวน์แล้ว
                         </span>
                       </td>
-                      <td className="px-3 py-2 font-mono font-semibold text-notion-accent-blue">A03AXI-DOWN-{contract.contractNo.slice(-6)}</td>
-                      <td className="px-3 py-2 font-mono text-stone-600 dark:text-stone-300">{startD} {monthNames[startM - 1]} {startYearBE}</td>
+                      <td className="px-3 py-2 font-mono font-semibold text-notion-accent-blue">A03AXI-DOWN-{String(contract.contractNo || '').slice(-6)}</td>
+                      <td className="px-3 py-2 font-mono text-stone-600 dark:text-stone-300">{startD} {monthNames[Math.max(0, Math.min(11, startM - 1))]} {startYearBE}</td>
                     </tr>
 
                     {/* Monthly Installment Rows 1 to N */}
