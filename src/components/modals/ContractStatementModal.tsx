@@ -23,8 +23,58 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
   onSaveContract,
 }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editDownPayment, setEditDownPayment] = useState<number | ''>('');
+  const [editMonthlyInstallment, setEditMonthlyInstallment] = useState<number | ''>('');
+  const [editTotalPrice, setEditTotalPrice] = useState<number | ''>('');
+  const [editCustomerName, setEditCustomerName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editGuarantorName, setEditGuarantorName] = useState('');
+  const [editGuarantorPhone, setEditGuarantorPhone] = useState('');
+  const [editAddress, setEditAddress] = useState('');
+  const [editLocationPin, setEditLocationPin] = useState('');
+  const [editProductName, setEditProductName] = useState('');
 
   if (!contract) return null;
+
+  const handleOpenEdit = () => {
+    setEditDownPayment(contract.downPayment || 0);
+    setEditMonthlyInstallment(contract.monthlyInstallment || 0);
+    setEditTotalPrice(contract.totalPrice || 0);
+    setEditCustomerName(contract.customerName || '');
+    setEditPhone(contract.phone || '');
+    setEditGuarantorName(contract.guarantorName || '');
+    setEditGuarantorPhone(contract.guarantorPhone || '');
+    setEditAddress(contract.address || '');
+    setEditLocationPin(contract.locationPin || '');
+    setEditProductName(contract.productName || '');
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onSaveContract) return;
+
+    const downNum = typeof editDownPayment === 'number' ? editDownPayment : 0;
+    const monthlyNum = typeof editMonthlyInstallment === 'number' ? editMonthlyInstallment : 0;
+    const totalNum = typeof editTotalPrice === 'number' ? editTotalPrice : 0;
+
+    const updated: CustomerContract = {
+      ...contract,
+      downPayment: downNum,
+      monthlyInstallment: monthlyNum,
+      totalPrice: totalNum,
+      customerName: editCustomerName.trim(),
+      phone: editPhone.trim(),
+      guarantorName: editGuarantorName.trim() || undefined,
+      guarantorPhone: editGuarantorPhone.trim() || undefined,
+      address: editAddress.trim(),
+      locationPin: editLocationPin.trim() || undefined,
+      productName: editProductName.trim(),
+    };
+
+    onSaveContract(updated);
+    setIsEditModalOpen(false);
+  };
 
   const statusStyle = getContractStatusStyle(contract.status);
 
@@ -433,11 +483,21 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
         </div>
 
         {/* Action Buttons Bar */}
-        <div className="flex items-center justify-between pt-2 no-print">
+        <div className="flex items-center justify-between pt-2 no-print flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <NotionButton type="button" variant="secondary" onClick={onClose}>
               ปิดหน้าต่าง
             </NotionButton>
+            {onSaveContract && (
+              <NotionButton
+                type="button"
+                variant="secondary"
+                icon={<Edit2 className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
+                onClick={handleOpenEdit}
+              >
+                แก้ไขข้อมูลสัญญา
+              </NotionButton>
+            )}
             {onQuickPay && contract.remainingBalance > 0 && (
               <NotionButton
                 type="button"
@@ -464,6 +524,176 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
           </NotionButton>
         </div>
       </div>
+
+      {/* SUB-MODAL FOR EDITING CONTRACT */}
+      <NotionModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        maxWidth="xl"
+        title={`แก้ไขข้อมูลสัญญาผ่อนชำระ (${contract.contractNo})`}
+        subtitle="ปรับปรุงเงินดาวน์, ค่างวด, เบอร์โทรศัพท์ และข้อมูลสัญญา"
+        icon={<Edit2 className="w-6 h-6 text-amber-500" />}
+      >
+        <form onSubmit={handleSaveEdit} className="space-y-4">
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-3">
+            <h4 className="font-bold text-xs text-amber-800 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+              <CreditCard className="w-4 h-4 text-amber-600" />
+              <span>เงื่อนไขทางการเงิน & สินค้า</span>
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-notion-text-muted mb-1">
+                  💵 เงินดาวน์ (บาท)
+                </label>
+                <input
+                  type="number"
+                  value={editDownPayment}
+                  onChange={(e) => setEditDownPayment(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-bold font-mono text-emerald-600"
+                  placeholder="เช่น 5000"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-notion-text-muted mb-1">
+                  📅 ค่างวด/เดือน (บาท)
+                </label>
+                <input
+                  type="number"
+                  value={editMonthlyInstallment}
+                  onChange={(e) => setEditMonthlyInstallment(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-bold font-mono text-notion-accent-blue"
+                  placeholder="เช่น 3288"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-notion-text-muted mb-1">
+                  🏷️ ราคาสินค้ารวม (บาท)
+                </label>
+                <input
+                  type="number"
+                  value={editTotalPrice}
+                  onChange={(e) => setEditTotalPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-bold font-mono"
+                  placeholder="เช่น 39456"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-notion-text-muted mb-1">
+                📦 สินค้าที่ซื้อ
+              </label>
+              <input
+                type="text"
+                value={editProductName}
+                onChange={(e) => setEditProductName(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-medium"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-3 rounded-xl bg-notion-sidebar-light dark:bg-stone-900 border border-notion-border-light dark:border-notion-border-dark space-y-2">
+              <h4 className="font-bold text-xs text-notion-accent-blue flex items-center gap-1.5 pb-1 border-b border-notion-border-light dark:border-notion-border-dark">
+                <User className="w-3.5 h-3.5" />
+                <span>ข้อมูลผู้ซื้อ</span>
+              </h4>
+              <div>
+                <label className="block text-[11px] font-semibold text-notion-text-muted mb-0.5">
+                  ชื่อ-นามสกุล ผู้ซื้อ
+                </label>
+                <input
+                  type="text"
+                  value={editCustomerName}
+                  onChange={(e) => setEditCustomerName(e.target.value)}
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-bold"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-notion-text-muted mb-0.5">
+                  📱 เบอร์โทรศัพท์ผู้ซื้อ
+                </label>
+                <input
+                  type="text"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-mono font-bold text-notion-accent-blue"
+                />
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-2">
+              <h4 className="font-bold text-xs text-purple-800 dark:text-purple-300 flex items-center gap-1.5 pb-1 border-b border-purple-500/20">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>ข้อมูลผู้ค้ำประกัน</span>
+              </h4>
+              <div>
+                <label className="block text-[11px] font-semibold text-notion-text-muted mb-0.5">
+                  ชื่อ-นามสกุล ผู้ค้ำ
+                </label>
+                <input
+                  type="text"
+                  value={editGuarantorName}
+                  onChange={(e) => setEditGuarantorName(e.target.value)}
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-notion-text-muted mb-0.5">
+                  📱 เบอร์โทรศัพท์ผู้ค้ำ
+                </label>
+                <input
+                  type="text"
+                  value={editGuarantorPhone}
+                  onChange={(e) => setEditGuarantorPhone(e.target.value)}
+                  className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-mono"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div>
+              <label className="block text-xs font-semibold text-notion-text-muted mb-1">
+                🏠 ที่อยู่ตามสัญญา
+              </label>
+              <input
+                type="text"
+                value={editAddress}
+                onChange={(e) => setEditAddress(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-notion-text-muted mb-1">
+                📍 พิกัด GPS
+              </label>
+              <input
+                type="text"
+                value={editLocationPin}
+                onChange={(e) => setEditLocationPin(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2 justify-end pt-3 border-t border-notion-border-light dark:border-notion-border-dark">
+            <NotionButton
+              type="button"
+              variant="secondary"
+              onClick={() => setIsEditModalOpen(false)}
+            >
+              ยกเลิก
+            </NotionButton>
+            <NotionButton
+              type="submit"
+              variant="primary"
+              icon={<Save className="w-4 h-4" />}
+            >
+              บันทึกการแก้ไข
+            </NotionButton>
+          </div>
+        </form>
+      </NotionModal>
     </NotionModal>
   );
 };

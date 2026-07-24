@@ -109,15 +109,7 @@ export function addContractFollowUpNote(contractNo: string, noteText: string, cu
 
 export function updateContractCustomerDetails(
   contractNo: string,
-  updatedFields: {
-    customerName?: string;
-    phone?: string;
-    address?: string;
-    guarantorName?: string;
-    locationPin?: string;
-    bpCode?: string;
-    notes?: string;
-  }
+  updatedFields: Partial<CustomerContract>
 ): CustomerContract[] {
   const contracts = getStoredContracts();
   const updated = contracts.map((c) => {

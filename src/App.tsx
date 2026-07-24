@@ -326,6 +326,7 @@ export function App() {
               onUpdateCustomerProfile={handleUpdateCustomerProfile}
               onDeleteCustomerProfile={handleDeleteCustomerProfile}
               onDeleteContract={handleDeleteContract}
+              onUpdateContract={handleUpdateContractCustomerDetails}
               onCleanDuplicates={handleCleanDuplicates}
               onWipeDatabase={handleWipeAllDatabase}
             />

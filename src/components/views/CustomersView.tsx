@@ -37,6 +37,7 @@ interface CustomersViewProps {
   onUpdateCustomerProfile?: (id: string, updatedFields: Partial<CustomerProfile>) => void;
   onDeleteCustomerProfile?: (id: string) => void;
   onDeleteContract?: (contractNo: string) => void;
+  onUpdateContract?: (contractNo: string, updatedFields: Partial<CustomerContract>) => void;
   onCleanDuplicates?: () => void;
   onWipeDatabase?: () => void;
 }
@@ -49,6 +50,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   onUpdateCustomerProfile,
   onDeleteCustomerProfile,
   onDeleteContract,
+  onUpdateContract,
   onCleanDuplicates,
   onWipeDatabase,
 }) => {
@@ -88,6 +90,20 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   const [editLocationPin, setEditLocationPin] = useState('');
   const [editSuccessMsg, setEditSuccessMsg] = useState<string | null>(null);
 
+  // Edit Contract Modal States
+  const [editingContract, setEditingContract] = useState<CustomerContract | null>(null);
+  const [editContractPhone, setEditContractPhone] = useState('');
+  const [editContractDownPayment, setEditContractDownPayment] = useState<number | ''>('');
+  const [editContractMonthlyInst, setEditContractMonthlyInst] = useState<number | ''>('');
+  const [editContractTotalPrice, setEditContractTotalPrice] = useState<number | ''>('');
+  const [editContractCustomerName, setEditContractCustomerName] = useState('');
+  const [editContractGuarantorName, setEditContractGuarantorName] = useState('');
+  const [editContractGuarantorPhone, setEditContractGuarantorPhone] = useState('');
+  const [editContractProductName, setEditContractProductName] = useState('');
+  const [editContractAddress, setEditContractAddress] = useState('');
+  const [editContractLocationPin, setEditContractLocationPin] = useState('');
+  const [editContractSuccessMsg, setEditContractSuccessMsg] = useState<string | null>(null);
+
   // Delete Confirmations
   const [deleteConfirmProfile, setDeleteConfirmProfile] = useState<CustomerProfile | null>(null);
   const [deleteConfirmContract, setDeleteConfirmContract] = useState<CustomerContract | null>(null);
@@ -114,6 +130,51 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
     setEditAddress(p.address || '');
     setEditLocationPin(p.locationPin || '');
     setEditSuccessMsg(null);
+  };
+
+  // Open Edit Contract Modal Handler
+  const handleOpenEditContractModal = (c: CustomerContract) => {
+    setEditingContract(c);
+    setEditContractPhone(c.phone || '');
+    setEditContractDownPayment(c.downPayment || 0);
+    setEditContractMonthlyInst(c.monthlyInstallment || 0);
+    setEditContractTotalPrice(c.totalPrice || 0);
+    setEditContractCustomerName(c.customerName || '');
+    setEditContractGuarantorName(c.guarantorName || '');
+    setEditContractGuarantorPhone(c.guarantorPhone || '');
+    setEditContractProductName(c.productName || '');
+    setEditContractAddress(c.address || '');
+    setEditContractLocationPin(c.locationPin || '');
+    setEditContractSuccessMsg(null);
+  };
+
+  // Save Edit Contract Submit
+  const handleSaveEditContractSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingContract || !onUpdateContract) return;
+
+    const downNum = typeof editContractDownPayment === 'number' ? editContractDownPayment : 0;
+    const monthlyNum = typeof editContractMonthlyInst === 'number' ? editContractMonthlyInst : 0;
+    const totalNum = typeof editContractTotalPrice === 'number' ? editContractTotalPrice : 0;
+
+    onUpdateContract(editingContract.contractNo, {
+      phone: editContractPhone.trim(),
+      downPayment: downNum,
+      monthlyInstallment: monthlyNum,
+      totalPrice: totalNum,
+      customerName: editContractCustomerName.trim(),
+      guarantorName: editContractGuarantorName.trim() || undefined,
+      guarantorPhone: editContractGuarantorPhone.trim() || undefined,
+      productName: editContractProductName.trim(),
+      address: editContractAddress.trim(),
+      locationPin: editContractLocationPin.trim() || undefined,
+    });
+
+    setEditContractSuccessMsg(`บันทึกการแก้ไขสัญญาเลขที่ ${editingContract.contractNo} สำเร็จ!`);
+    setTimeout(() => {
+      setEditContractSuccessMsg(null);
+      setEditingContract(null);
+    }, 1200);
   };
 
   // Save Edit Customer Submit
@@ -650,6 +711,16 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                             >
                               ดูสัญญา
                             </NotionButton>
+                            {onUpdateContract && (
+                              <NotionButton
+                                variant="secondary"
+                                size="sm"
+                                icon={<Edit2 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />}
+                                onClick={() => handleOpenEditContractModal(contract)}
+                              >
+                                แก้ไขสัญญา
+                              </NotionButton>
+                            )}
                             {contract.remainingBalance > 0 && (
                               <NotionButton
                                 variant="secondary"
@@ -1363,6 +1434,212 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
             </div>
           </div>
         )}
+      </NotionModal>
+
+      {/* ===== EDIT CONTRACT MODAL ===== */}
+      <NotionModal
+        isOpen={!!editingContract}
+        onClose={() => setEditingContract(null)}
+        maxWidth="2xl"
+        title={`แก้ไขข้อมูลสัญญาผ่อนชำระ (${editingContract?.contractNo})`}
+        subtitle="แก้ไขเงินดาวน์, ค่างวด, เบอร์โทร, ข้อมูลผู้ซื้อ, ผู้ค้ำประกัน และสินค้า"
+        icon={<Edit2 className="w-6 h-6 text-amber-500" />}
+      >
+        {editContractSuccessMsg ? (
+          <div className="p-6 text-center space-y-3">
+            <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto animate-bounce" />
+            <p className="font-extrabold text-base text-emerald-600 dark:text-emerald-400">
+              {editContractSuccessMsg}
+            </p>
+          </div>
+        ) : editingContract ? (
+          <form onSubmit={handleSaveEditContractSubmit} className="space-y-4">
+            {/* Financial Terms Section */}
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-3">
+              <h4 className="font-bold text-xs text-amber-800 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                <CreditCard className="w-4 h-4 text-amber-600" />
+                <span>เงื่อนไขทางการเงิน & สินค้า (Financials & Product)</span>
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-notion-text-muted mb-1">
+                    💵 เงินดาวน์ (บาท)
+                  </label>
+                  <input
+                    type="number"
+                    value={editContractDownPayment}
+                    onChange={(e) => setEditContractDownPayment(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-bold font-mono text-emerald-600"
+                    placeholder="เช่น 5000"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-notion-text-muted mb-1">
+                    📅 ค่างวดต่อเดือน (บาท)
+                  </label>
+                  <input
+                    type="number"
+                    value={editContractMonthlyInst}
+                    onChange={(e) => setEditContractMonthlyInst(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-bold font-mono text-notion-accent-blue"
+                    placeholder="เช่น 3288"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-notion-text-muted mb-1">
+                    🏷️ ราคาสินค้ารวม (บาท)
+                  </label>
+                  <input
+                    type="number"
+                    value={editContractTotalPrice}
+                    onChange={(e) => setEditContractTotalPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-bold font-mono"
+                    placeholder="เช่น 39456"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-notion-text-muted mb-1">
+                  📦 สินค้าที่ซื้อ
+                </label>
+                <input
+                  type="text"
+                  value={editContractProductName}
+                  onChange={(e) => setEditContractProductName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-medium"
+                  placeholder="เช่น ตู้เย็น THE COOL 3PJUMBOPREMIUM"
+                />
+              </div>
+            </div>
+
+            {/* Buyer & Guarantor Info Section */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Buyer */}
+              <div className="p-3 rounded-xl bg-notion-sidebar-light dark:bg-stone-900 border border-notion-border-light dark:border-notion-border-dark space-y-2">
+                <h4 className="font-bold text-xs text-notion-accent-blue flex items-center gap-1.5 pb-1 border-b border-notion-border-light dark:border-notion-border-dark">
+                  <User className="w-3.5 h-3.5" />
+                  <span>ข้อมูลผู้ซื้อ</span>
+                </h4>
+                <div>
+                  <label className="block text-[11px] font-semibold text-notion-text-muted mb-0.5">
+                    ชื่อ-นามสกุล ผู้ซื้อ
+                  </label>
+                  <input
+                    type="text"
+                    value={editContractCustomerName}
+                    onChange={(e) => setEditContractCustomerName(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-notion-text-muted mb-0.5">
+                    📱 เบอร์โทรศัพท์ผู้ซื้อ
+                  </label>
+                  <input
+                    type="text"
+                    value={editContractPhone}
+                    onChange={(e) => setEditContractPhone(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-mono font-bold text-notion-accent-blue"
+                  />
+                </div>
+              </div>
+
+              {/* Guarantor */}
+              <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-2">
+                <h4 className="font-bold text-xs text-purple-800 dark:text-purple-300 flex items-center gap-1.5 pb-1 border-b border-purple-500/20">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>ข้อมูลผู้ค้ำประกัน</span>
+                </h4>
+                <div>
+                  <label className="block text-[11px] font-semibold text-notion-text-muted mb-0.5">
+                    ชื่อ-นามสกุล ผู้ค้ำ
+                  </label>
+                  <input
+                    type="text"
+                    value={editContractGuarantorName}
+                    onChange={(e) => setEditContractGuarantorName(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-semibold"
+                    placeholder="ถ้ามี"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-notion-text-muted mb-0.5">
+                    📱 เบอร์โทรศัพท์ผู้ค้ำ
+                  </label>
+                  <input
+                    type="text"
+                    value={editContractGuarantorPhone}
+                    onChange={(e) => setEditContractGuarantorPhone(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-mono"
+                    placeholder="ถ้ามี"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Address & GPS */}
+            <div className="space-y-2">
+              <div>
+                <label className="block text-xs font-semibold text-notion-text-muted mb-1">
+                  🏠 ที่อยู่ตามสัญญา
+                </label>
+                <input
+                  type="text"
+                  value={editContractAddress}
+                  onChange={(e) => setEditContractAddress(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-notion-text-muted mb-1">
+                  📍 พิกัด GPS (ละติจูด, ลองจิจูด หรือ Google Maps URL)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={editContractLocationPin}
+                    onChange={(e) => setEditContractLocationPin(e.target.value)}
+                    className="flex-1 px-3 py-2 text-xs rounded-xl bg-notion-bg-light dark:bg-notion-sidebar-dark border border-notion-border-light dark:border-notion-border-dark font-mono"
+                    placeholder="เช่น 18.7883, 98.9853"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition((pos) => {
+                          setEditContractLocationPin(`${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`);
+                        });
+                      }
+                    }}
+                    className="px-3 py-2 text-xs font-bold rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/25 flex items-center gap-1"
+                  >
+                    <Navigation className="w-3.5 h-3.5" />
+                    <span>ดึงพิกัด</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end pt-3 border-t border-notion-border-light dark:border-notion-border-dark">
+              <NotionButton
+                type="button"
+                variant="secondary"
+                onClick={() => setEditingContract(null)}
+              >
+                ยกเลิก
+              </NotionButton>
+              <NotionButton
+                type="submit"
+                variant="primary"
+                icon={<Save className="w-4 h-4" />}
+              >
+                บันทึกการแก้ไขสัญญา
+              </NotionButton>
+            </div>
+          </form>
+        ) : null}
       </NotionModal>
     </div>
   );
