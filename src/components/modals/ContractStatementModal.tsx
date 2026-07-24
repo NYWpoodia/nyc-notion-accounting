@@ -203,6 +203,10 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
         };
       });
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   const handleOpenGoogleMaps = (pin: string) => {
     if (!pin) return;
     if (pin.startsWith('http://') || pin.startsWith('https://')) {
