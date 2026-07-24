@@ -110,11 +110,12 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
 
   // Helper to get linked contracts for a customer profile
   const getCustomerContracts = (profile: CustomerProfile): CustomerContract[] => {
-    return contracts.filter(
+    if (!profile) return [];
+    return (contracts || []).filter(
       (c) =>
-        (c.bpCode && profile.bpCode && c.bpCode === profile.bpCode) ||
-        c.phone === profile.phone ||
-        c.customerName === profile.customerName
+        Boolean(c && ((c.bpCode && profile.bpCode && c.bpCode === profile.bpCode) ||
+        (c.phone && profile.phone && c.phone === profile.phone) ||
+        (c.customerName && profile.customerName && c.customerName === profile.customerName)))
     );
   };
 
@@ -291,21 +292,22 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   };
 
   // Filter Profiles (Tab 1)
-  const filteredProfiles = customerProfiles.filter((p) => {
+  const filteredProfiles = (customerProfiles || []).filter((p) => {
+    if (!p) return false;
     const linked = getCustomerContracts(p);
-    if (selectedCategory && !linked.some((c) => c.category === selectedCategory)) return false;
-    if (selectedStatus && !linked.some((c) => c.status === selectedStatus)) return false;
+    if (selectedCategory && !linked.some((c) => c && c.category === selectedCategory)) return false;
+    if (selectedStatus && !linked.some((c) => c && c.status === selectedStatus)) return false;
 
-    if (searchQuery.trim()) {
+    if (searchQuery && searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      const matchName = p.customerName.toLowerCase().includes(q);
-      const matchBp = p.bpCode?.toLowerCase().includes(q);
-      const matchPhone = p.phone.includes(q);
-      const matchIdCard = p.idCardNo?.toLowerCase().includes(q);
-      const matchGuarantor = p.guarantorName?.toLowerCase().includes(q);
-      const matchGuarantorPhone = p.guarantorPhone?.includes(q);
-      const matchAddress = p.address.toLowerCase().includes(q);
-      const matchContract = linked.some((c) => c.contractNo.toLowerCase().includes(q) || c.productName.toLowerCase().includes(q));
+      const matchName = (p.customerName || '').toLowerCase().includes(q);
+      const matchBp = (p.bpCode || '').toLowerCase().includes(q);
+      const matchPhone = (p.phone || '').includes(q);
+      const matchIdCard = (p.idCardNo || '').toLowerCase().includes(q);
+      const matchGuarantor = (p.guarantorName || '').toLowerCase().includes(q);
+      const matchGuarantorPhone = (p.guarantorPhone || '').includes(q);
+      const matchAddress = (p.address || '').toLowerCase().includes(q);
+      const matchContract = linked.some((c) => c && ((c.contractNo || '').toLowerCase().includes(q) || (c.productName || '').toLowerCase().includes(q)));
 
       return matchName || matchBp || matchPhone || matchIdCard || matchGuarantor || matchGuarantorPhone || matchAddress || matchContract;
     }
@@ -314,20 +316,21 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   });
 
   // Filter Contracts (Tab 2)
-  const filteredContracts = contracts.filter((c) => {
+  const filteredContracts = (contracts || []).filter((c) => {
+    if (!c) return false;
     if (selectedCategory && c.category !== selectedCategory) return false;
     if (selectedStatus && c.status !== selectedStatus) return false;
 
-    if (searchQuery.trim()) {
+    if (searchQuery && searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      const matchName = c.customerName.toLowerCase().includes(q);
-      const matchBp = c.bpCode?.toLowerCase().includes(q);
-      const matchContractNo = c.contractNo.toLowerCase().includes(q);
-      const matchPhone = c.phone.includes(q);
-      const matchGuarantor = c.guarantorName?.toLowerCase().includes(q);
-      const matchGuarantorPhone = c.guarantorPhone?.includes(q);
-      const matchAddress = c.address.toLowerCase().includes(q);
-      const matchProduct = c.productName.toLowerCase().includes(q);
+      const matchName = (c.customerName || '').toLowerCase().includes(q);
+      const matchBp = (c.bpCode || '').toLowerCase().includes(q);
+      const matchContractNo = (c.contractNo || '').toLowerCase().includes(q);
+      const matchPhone = (c.phone || '').includes(q);
+      const matchGuarantor = (c.guarantorName || '').toLowerCase().includes(q);
+      const matchGuarantorPhone = (c.guarantorPhone || '').includes(q);
+      const matchAddress = (c.address || '').toLowerCase().includes(q);
+      const matchProduct = (c.productName || '').toLowerCase().includes(q);
 
       return matchName || matchBp || matchContractNo || matchPhone || matchGuarantor || matchGuarantorPhone || matchAddress || matchProduct;
     }
