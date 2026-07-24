@@ -34,7 +34,7 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
   const [editLocationPin, setEditLocationPin] = useState('');
   const [editProductName, setEditProductName] = useState('');
 
-  if (!contract) return null;
+  if (!isOpen || !contract) return null;
 
   const handleOpenEdit = () => {
     setEditDownPayment(contract.downPayment || 0);
@@ -90,9 +90,9 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
   if (contract.startDate) {
     const parts = contract.startDate.split('-');
     if (parts.length === 3) {
-      startY = parseInt(parts[0], 10);
-      startM = parseInt(parts[1], 10);
-      startD = parseInt(parts[2], 10);
+      startY = parseInt(parts[0], 10) || 2026;
+      startM = parseInt(parts[1], 10) || 7;
+      startD = parseInt(parts[2], 10) || 23;
     }
   }
   const startYearBE = startY > 2500 ? startY : startY + 543;
@@ -115,9 +115,9 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
   if (contract.startDate) {
     const parts = contract.startDate.split('-');
     if (parts.length === 3) {
-      const sY = parseInt(parts[0], 10);
-      const sM = parseInt(parts[1], 10);
-      const sD = parseInt(parts[2], 10);
+      const sY = parseInt(parts[0], 10) || 2026;
+      const sM = parseInt(parts[1], 10) || 6;
+      const sD = parseInt(parts[2], 10) || 15;
       firstDueY = sY;
       firstDueM = sD >= dueDay ? sM + 2 : sM + 1;
     }
@@ -125,6 +125,7 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
 
   // Build Installment Schedule Array (Prefer exact Excel schedule if present)
   const hasExactSchedule = contract.schedule && contract.schedule.length > 0;
+  const todayIso = new Date().toISOString().split('T')[0];
 
   const scheduleRows = hasExactSchedule
     ? contract.schedule!.map((item) => {
@@ -135,6 +136,13 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
         const isFullyPaid = item.isPaid || (itemPaidAmount >= item.installmentAmount && item.installmentAmount > 0);
         const isPartiallyPaid = !isFullyPaid && itemPaidAmount > 0;
 
+        let isOverdue = false;
+        if (!isFullyPaid && item.dueDate) {
+          if (/^\d{4}-\d{2}-\d{2}$/.test(item.dueDate)) {
+            isOverdue = item.dueDate < todayIso;
+          }
+        }
+
         return {
           instNo: item.installmentNo,
           isFinal: item.installmentNo === totalInst,
@@ -144,7 +152,7 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
           isPaid: isFullyPaid,
           isPartiallyPaid,
           paidAmount: itemPaidAmount,
-          isOverdue: !isFullyPaid && item.dueDate < new Date().toISOString().split('T')[0],
+          isOverdue,
           paymentRecord: matchPay ? {
             ...matchPay,
             receiptNo: receiptNoStr,
@@ -169,16 +177,17 @@ export const ContractStatementModal: React.FC<ContractStatementModalProps> = ({
         let rawM = firstDueM + idx;
         let dueYear = firstDueY + Math.floor((rawM - 1) / 12);
         let dueMonth = ((rawM - 1) % 12) + 1;
+        if (dueMonth <= 0) dueMonth += 12;
 
+        const safeMonthIdx = Math.max(0, Math.min(11, dueMonth - 1));
         const dueYearBE = dueYear > 2500 ? dueYear : dueYear + 543;
-        const dueDateThai = `${dueDay} ${monthNames[dueMonth - 1]} ${dueYearBE}`;
+        const dueDateThai = `${dueDay} ${monthNames[safeMonthIdx]} ${dueYearBE}`;
         const dueDateIso = `${dueYear}-${String(dueMonth).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
 
         const matchPay = contract.payments?.find(
           (p) => p.installmentNo === instNo || (p.installmentNo === undefined && contract.payments?.indexOf(p) === idx)
         );
 
-        const todayIso = new Date().toISOString().split('T')[0];
         const isPaid = !!matchPay;
         const isOverdue = !isPaid && dueDateIso < todayIso;
 
