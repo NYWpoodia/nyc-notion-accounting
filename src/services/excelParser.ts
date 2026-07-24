@@ -37,7 +37,8 @@ function parseExcelDateString(val: any): string | undefined {
   if (val instanceof Date) {
     if (isNaN(val.getTime())) return undefined;
     // JS Date stores CE year - use UTC to avoid timezone shifts
-    const yyyy = val.getUTCFullYear();
+    let yyyy = val.getUTCFullYear();
+    if (yyyy > 2500) yyyy -= 543;
     const mm = String(val.getUTCMonth() + 1).padStart(2, '0');
     const dd = String(val.getUTCDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
@@ -50,7 +51,8 @@ function parseExcelDateString(val: any): string | undefined {
     const utcMs = (val - 25569) * 86400 * 1000;
     const dateObj = new Date(utcMs);
     if (isNaN(dateObj.getTime())) return undefined;
-    const yyyy = dateObj.getUTCFullYear();
+    let yyyy = dateObj.getUTCFullYear();
+    if (yyyy > 2500) yyyy -= 543;
     const mm = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
     const dd = String(dateObj.getUTCDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
